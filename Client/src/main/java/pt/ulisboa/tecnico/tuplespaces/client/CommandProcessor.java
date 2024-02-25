@@ -80,7 +80,8 @@ public class CommandProcessor {
         String tuple = split[1];
 
         // put the tuple
-        System.out.println("TODO: implement put command");
+        this.clientService.put(tuple);
+        //System.out.println("TODO: implement put command");
 
     }
 

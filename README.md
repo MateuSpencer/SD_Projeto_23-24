@@ -18,11 +18,11 @@ code dependency management, to ensure your code runs using the correct component
 
 *(fill the table below with the team members, and then delete this line)*
 
-| Number | Name              | User                             | Email                                       |
-|--------|-------------------|----------------------------------|---------------------------------------------|
-| 100032 | Mateus Sepncer    | <https://github.com/MateuSpencer>| <mailto:mateus.g.spencer@tecnico.ulisboa.pt>|
-| 22222  | Bob Systems       | <https://github.com/BobUser>     | <mailto:bob@tecnico.ulisboa.pt>             |
-| 33333  | Charlie Rules     | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt>         |
+| Number | Name              | User                             | Email                                        |
+|--------|-------------------|----------------------------------|----------------------------------------------|
+| 100032 | Mateus Spencer    | <https://github.com/MateuSpencer>| <mailto:mateus.g.spencer@tecnico.ulisboa.pt> |
+| 83897  | Goncalo Correia   | <https://github.com/layko88>     | <mailto:goncalo.t.correia@tecnico.ulisboa.pt>|
+| 33333  | Charlie Rules     | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt>          |
 
 ## Getting Started
 

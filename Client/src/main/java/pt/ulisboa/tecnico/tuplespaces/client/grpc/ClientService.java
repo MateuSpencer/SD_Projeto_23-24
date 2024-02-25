@@ -4,6 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.AbstractBlockingStub;
 import io.grpc.stub.StreamObserver;
+import pt.ulisboa.tecnico.tuplespaces.grpc.ClientTupleSpaces;
 
 public class ClientService {
 
@@ -13,7 +14,7 @@ public class ClientService {
 
   private final ClientServiceGrpc.ClientServiceBlockingStub stub;
 
-  public ClientService(String host, int port) {
+  public ClientService(String host, String port) {
     final String target = host + ":" + port;
     final ManagedChannel channel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
     this.stub = ClientServiceGrpc.newBlockingStub(channel);

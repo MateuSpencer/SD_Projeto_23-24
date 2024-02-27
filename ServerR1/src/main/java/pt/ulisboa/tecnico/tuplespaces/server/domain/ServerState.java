@@ -1,6 +1,7 @@
 package pt.ulisboa.tecnico.tuplespaces.server.domain;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class ServerState {
@@ -16,9 +17,14 @@ public class ServerState {
     tuples.add(tuple);
   }
 
-  private String getMatchingTuple(String pattern) {
-    for (String tuple : this.tuples) {
+  private String getMatchingTuple(String pattern, boolean remove) {
+    Iterator<String> iterator = this.tuples.iterator();
+    while (iterator.hasNext()) {
+      String tuple = iterator.next();
       if (tuple.matches(pattern)) {
+        if (remove) {
+          iterator.remove();
+        }
         return tuple;
       }
     }
@@ -26,16 +32,14 @@ public class ServerState {
   }
 
   public String read(String pattern) {
-    return getMatchingTuple(pattern);
+    return getMatchingTuple(pattern, false);
   }
 
   public String take(String pattern) {
-    // TODO
-    return null;
+    return getMatchingTuple(pattern, true);
   }
 
   public List<String> getTupleSpacesState() {
-    // TODO
-    return null;
+    return new ArrayList<>(this.tuples);
   }
 }

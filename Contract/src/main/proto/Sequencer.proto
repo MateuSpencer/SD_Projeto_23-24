@@ -1,6 +1,8 @@
 syntax = "proto3";
 package pt.ulisboa.tecnico.sequencer.contract;
 
+option java_multiple_files = true;
+
 message GetSeqNumberRequest {}
 message GetSeqNumberResponse {
   int32 seqNumber = 1;

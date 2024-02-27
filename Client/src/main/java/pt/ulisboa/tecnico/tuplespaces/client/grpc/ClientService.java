@@ -2,12 +2,10 @@ package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
-import io.grpc.stub.AbstractBlockingStub;
-import io.grpc.stub.StreamObserver;
 
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesCentralized;
+import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
 
 public class ClientService {
 
@@ -24,28 +22,28 @@ public class ClientService {
   }
 
   public void put(String tuple) {
-    TupleSpacesCentralized.PutRequest request = TupleSpacesCentralized.PutRequest.getDefaultInstance();
+    PutRequest request = PutRequest.getDefaultInstance();
     stub.put(request);
 
     System.out.println("OK");
   }
 
   public void read(String tuple) {
-    TupleSpacesCentralized.ReadRequest request = TupleSpacesCentralized.ReadRequest.getDefaultInstance();
+    ReadRequest request = ReadRequest.getDefaultInstance();
     stub.read(request);
 
     System.out.println("OK");
   }
 
   public void take(String tuple) {
-    TupleSpacesCentralized.TakeRequest request = TupleSpacesCentralized.TakeRequest.getDefaultInstance();
+    TakeRequest request = TakeRequest.getDefaultInstance();
     stub.take(request);
 
     System.out.println("OK");
   }
 
   public void getTupleSpacesState(String qualifier) {
-    TupleSpacesCentralized.getTupleSpacesStateRequest request = TupleSpacesCentralized.getTupleSpacesStateRequest.getDefaultInstance();
+    GetTupleSpacesStateRequest request = GetTupleSpacesStateRequest.getDefaultInstance();
     stub.getTupleSpacesState(request);
 
     System.out.println("OK");

@@ -4,14 +4,9 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
-
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
 
 public class ClientService {
-
-  /*TODO: The gRPC client-side logic should be here.
-        This should include a method that builds a channel and stub,
-        as well as individual methods for each remote operation of this service. */
 
   private final TupleSpacesGrpc.TupleSpacesBlockingStub stub;
 
@@ -22,30 +17,33 @@ public class ClientService {
   }
 
   public void put(String tuple) {
-    PutRequest request = PutRequest.getDefaultInstance();
+    PutRequest request = PutRequest.newBuilder().setTuple(tuple).build();
     stub.put(request);
 
     System.out.println("OK");
   }
 
-  public void read(String tuple) {
-    ReadRequest request = ReadRequest.getDefaultInstance();
-    stub.read(request);
+  public String read(String pattern) {
+    ReadRequest request = ReadRequest.newBuilder().setPattern(pattern).build();
+    ReadResponse response = stub.read(request);
 
     System.out.println("OK");
+    return response.getResult();
   }
 
-  public void take(String tuple) {
-    TakeRequest request = TakeRequest.getDefaultInstance();
-    stub.take(request);
+  public String take(String pattern) {
+    TakeRequest request = TakeRequest.newBuilder().setPattern(pattern).build();
+    TakeResponse response = stub.take(request);
 
     System.out.println("OK");
+    return response.getResult();
   }
 
-  public void getTupleSpacesState(String qualifier) {
+  public GetTupleSpacesStateResponse getTupleSpacesState() {
     GetTupleSpacesStateRequest request = GetTupleSpacesStateRequest.getDefaultInstance();
-    stub.getTupleSpacesState(request);
+    GetTupleSpacesStateResponse response = stub.getTupleSpacesState(request);
 
     System.out.println("OK");
+    return response;
   }
 }

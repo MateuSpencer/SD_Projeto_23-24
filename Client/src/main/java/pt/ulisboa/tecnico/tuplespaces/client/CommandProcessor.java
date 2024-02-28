@@ -118,10 +118,10 @@ public class CommandProcessor {
             this.printUsage();
             return;
         }
-        String qualifier = split[1];
+        String qualifier = split[1]; //TODO: where to use this? it is not on the request...
 
         // get the tuple spaces state
-        this.clientService.getTupleSpacesState(qualifier);
+        this.clientService.getTupleSpacesState();
 
     }
 

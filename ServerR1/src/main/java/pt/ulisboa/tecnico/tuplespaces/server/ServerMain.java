@@ -21,7 +21,7 @@ public class ServerMain {
     // check arguments
     if (args.length != 2) {
       System.err.println("Argument(s) missing!");
-      System.err.println("Usage: mvn exec:java -Dexec.args=<host> <port>");
+      System.err.println("Usage: mvn exec:java -Dexec.args=<host> <qual>");
       return;
     }
 

@@ -16,24 +16,43 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
         serverState.put(request.getTuple());
         responseObserver.onNext(PutResponse.getDefaultInstance());
         responseObserver.onCompleted();
-        System.out.println(request.getTuple());
+        
+        System.out.println(request.getTuple()); // TODO: Remove DEBUG
     }
 
-    @Override
-    public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
-        
-        String result = serverState.read(request.getPattern());
-        responseObserver.onNext(ReadResponse.newBuilder().setResult(result).build());
-        responseObserver.onCompleted();
+@Override
+public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
+    String result = serverState.read(request.getPattern());
+
+    ReadResponse response;
+    if (result != null) {
+        response = ReadResponse.newBuilder().setResult(result).build();
+    } else {
+        response = ReadResponse.newBuilder().build();
     }
 
-    @Override
-    public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
-        
-        String result = serverState.take(request.getPattern());
-        responseObserver.onNext(TakeResponse.newBuilder().setResult(result).build());
-        responseObserver.onCompleted();
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+
+    System.out.println(request.getPattern()); // TODO: Remove DEBUG
+}
+
+@Override
+public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
+    String result = serverState.take(request.getPattern());
+
+    TakeResponse response;
+    if (result != null) {
+        response = TakeResponse.newBuilder().setResult(result).build();
+    } else {
+        response = TakeResponse.newBuilder().build();
     }
+
+    responseObserver.onNext(response);
+    responseObserver.onCompleted();
+
+    System.out.println(request.getPattern()); // TODO: Remove DEBUG
+}
 
     @Override
     public void getTupleSpacesState(GetTupleSpacesStateRequest request, StreamObserver<GetTupleSpacesStateResponse> responseObserver) {

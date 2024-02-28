@@ -1,5 +1,6 @@
 package pt.ulisboa.tecnico.tuplespaces.client;
 
+import pt.ulisboa.tecnico.tuplespaces.centralized.contract.GetTupleSpacesStateResponse;
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 import java.util.Scanner;
@@ -94,7 +95,8 @@ public class CommandProcessor {
         String tuple = split[1];
 
         // read the tuple
-        this.clientService.read(tuple);
+        String response = this.clientService.read(tuple);
+        System.out.println(response);
     }
 
 
@@ -109,7 +111,8 @@ public class CommandProcessor {
         String tuple = split[1];
 
         // take the tuple
-        this.clientService.take(tuple);
+        String response = this.clientService.take(tuple);
+        System.out.println(response);
     }
 
     private void getTupleSpacesState(String[] split){
@@ -121,8 +124,8 @@ public class CommandProcessor {
         String qualifier = split[1]; //TODO: where to use this? it is not on the request...
 
         // get the tuple spaces state
-        this.clientService.getTupleSpacesState();
-
+        GetTupleSpacesStateResponse response = this.clientService.getTupleSpacesState();
+        System.out.println(response.getTupleList());
     }
 
     private void sleep(String[] split) {

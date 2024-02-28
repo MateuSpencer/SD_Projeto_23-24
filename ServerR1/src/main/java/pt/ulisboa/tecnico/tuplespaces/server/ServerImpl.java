@@ -12,21 +12,16 @@ import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
 
 public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
 
-   /* private ServerState serverState;
-
-    public ServerImpl(ServerState serverState) {
-        this.serverState = serverState;
-    }
+   private ServerState serverState = new ServerState();
 
     @Override
-
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
         serverState.put(request.getTuple());
         responseObserver.onNext(PutResponse.getDefaultInstance());
         responseObserver.onCompleted();
     }
 
-    @Override
+    /* @Override
     public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
         
         String tuple = serverState.read(request.getPattern());
@@ -48,5 +43,5 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
         java.util.List<String> tuples = serverState.getTupleSpacesState();
         responseObserver.onNext(GetTupleSpacesStateResponse.newBuilder().addAllTuples(tuples).build());
         responseObserver.onCompleted();
-    } */
+    }  */
 }

@@ -19,13 +19,13 @@ public class ServerMain {
     }
 
     // check arguments
-    if (args.length != 4) {
+    if (args.length != 2) {
       System.err.println("Argument(s) missing!");
-      System.err.println("Usage: mvn exec:java -Dexec.args=<host> <port> <qual>"); // qual?
+      System.err.println("Usage: mvn exec:java -Dexec.args=<host> <port>");
       return;
     }
 
-    final int port = Integer.parseInt(args[1]);
+    final int port = Integer.parseInt(args[0]);
     final BindableService impl = new ServerImpl();
 
     // Create a new server to listen on port

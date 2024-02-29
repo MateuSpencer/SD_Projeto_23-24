@@ -3,9 +3,11 @@ package pt.ulisboa.tecnico.tuplespaces.server;
 import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
 
 import io.grpc.stub.StreamObserver;
+import io.grpc.Status;
 
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
+import pt.ulisboa.tecnico.tuplespaces.server.exceptions.TupleAlreadyExistsException;
 
 public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
 
@@ -13,9 +15,14 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
 
     @Override
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
+        
+        try {
         serverState.put(request.getTuple());
         responseObserver.onNext(PutResponse.getDefaultInstance());
         responseObserver.onCompleted();
+        } catch (TupleAlreadyExistsException e) {
+            responseObserver.onError(Status.ALREADY_EXISTS.withDescription(e.getMessage()).asRuntimeException());
+        }
         
         System.out.println(request.getTuple()); // TODO: Remove DEBUG
     }

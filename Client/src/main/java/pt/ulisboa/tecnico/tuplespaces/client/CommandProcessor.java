@@ -28,12 +28,18 @@ public class CommandProcessor {
 
         Scanner scanner = new Scanner(System.in);
         boolean exit = false;
+        boolean isFirstTime = true;
 
         while (!exit) {
+            if (!isFirstTime) {
+                System.out.println();
+            } else {
+                isFirstTime = false;
+            }
             System.out.print("> ");
             String line = scanner.nextLine().trim();
             String[] split = line.split(SPACE);
-             switch (split[0]) {
+            switch (split[0]) {
                 case PUT:
                     this.put(split);
                     break;

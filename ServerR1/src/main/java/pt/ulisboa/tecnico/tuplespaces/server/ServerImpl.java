@@ -24,7 +24,7 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
             responseObserver.onError(Status.ALREADY_EXISTS.withDescription(e.getMessage()).asRuntimeException());
         }
         
-        System.out.println(request.getTuple()); // TODO: Remove DEBUG
+        //System.out.println(request.getTuple()); // TODO: Remove DEBUG
     }
 
 @Override
@@ -41,7 +41,7 @@ public void read(ReadRequest request, StreamObserver<ReadResponse> responseObser
     responseObserver.onNext(response);
     responseObserver.onCompleted();
 
-    System.out.println(request.getPattern()); // TODO: Remove DEBUG
+    //System.out.println(request.getPattern()); // TODO: Remove DEBUG
 }
 
 @Override
@@ -58,7 +58,7 @@ public void take(TakeRequest request, StreamObserver<TakeResponse> responseObser
     responseObserver.onNext(response);
     responseObserver.onCompleted();
 
-    System.out.println(request.getPattern()); // TODO: Remove DEBUG
+    //System.out.println(request.getPattern()); // TODO: Remove DEBUG
 }
 
     @Override

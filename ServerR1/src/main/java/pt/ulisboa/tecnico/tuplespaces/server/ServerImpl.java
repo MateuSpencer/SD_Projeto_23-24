@@ -32,63 +32,69 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
             responseObserver.onNext(PutResponse.getDefaultInstance());
             responseObserver.onCompleted();
         }   
-        /*serverState.put(request.getTuple());
-        responseObserver.onNext(PutResponse.getDefaultInstance());
-        responseObserver.onCompleted();
-        } catch (TupleAlreadyExistsException e) {
-            responseObserver.onError(Status.ALREADY_EXISTS.withDescription(e.getMessage()).asRuntimeException());
-        }*/
         
         if (debug) {
             System.err.println("Sent PutResponse");
         }
     }
 
-@Override
-public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
-    if (debug) {
-        System.err.println("Received ReadRequest with pattern: " + request.getPattern());
-    }
-    
-    String result = serverState.read(request.getPattern());
+    @Override
+    public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
+        if (debug) {
+            System.err.println("Received ReadRequest with pattern: " + request.getPattern());
+        }
+        
+        if(!inputIsValid(request.getPattern())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
+        }
 
-    ReadResponse response;
-    if (result != null) {
-        response = ReadResponse.newBuilder().setResult(result).build();
-    } else {
-        response = ReadResponse.newBuilder().build();
-    }
+        else {   
+            String result = serverState.read(request.getPattern());
 
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
+            ReadResponse response;
+            if (result != null) {
+                response = ReadResponse.newBuilder().setResult(result).build();
+            } else {
+                response = ReadResponse.newBuilder().build();
+            }
 
-    if (debug) {
-        System.err.println("Sent ReadResponse with result: " + response.getResult());
-    }
-}
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
 
-@Override
-public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
-    if (debug) {
-        System.err.println("Received TakeRequest with pattern: " + request.getPattern());
-    }
-    
-    String result = serverState.take(request.getPattern());
-
-    TakeResponse response;
-    if (result != null) {
-        response = TakeResponse.newBuilder().setResult(result).build();
-    } else {
-        response = TakeResponse.newBuilder().build();
+            if (debug) {
+                System.err.println("Sent ReadResponse with result: " + response.getResult());
+            }
+        }
     }
 
-    responseObserver.onNext(response);
-    responseObserver.onCompleted();
+    @Override
+    public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
+        if (debug) {
+            System.err.println("Received TakeRequest with pattern: " + request.getPattern());
+        }
+        
+        if(!inputIsValid(request.getPattern())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
+        }
 
-    if (debug) {
-        System.err.println("Sent TakeResponse with result: " + response.getResult());
+        else {
+            String result = serverState.take(request.getPattern());
+
+            TakeResponse response;
+            if (result != null) {
+                response = TakeResponse.newBuilder().setResult(result).build();
+            } else {
+                response = TakeResponse.newBuilder().build();
+            }
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            if (debug) {
+                System.err.println("Sent TakeResponse with result: " + response.getResult());
+            }
+        }
     }
-}
 
     @Override
     public void getTupleSpacesState(GetTupleSpacesStateRequest request, StreamObserver<GetTupleSpacesStateResponse> responseObserver) {

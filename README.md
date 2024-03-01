@@ -4,8 +4,7 @@ Distributed Systems Project 2024
 
 **Group G65**
 
-*(choose one of the following levels and erase the other one)*  
-**Difficulty level: I am Death incarnate! | Bring 'em on!**
+**Difficulty level: Bring 'em on!**
 
 
 ### Code Identification
@@ -16,13 +15,11 @@ code dependency management, to ensure your code runs using the correct component
 
 ### Team Members
 
-*(fill the table below with the team members, and then delete this line)*
-
 | Number | Name              | User                             | Email                                        |
 |--------|-------------------|----------------------------------|----------------------------------------------|
 | 100032 | Mateus Spencer    | <https://github.com/MateuSpencer>| <mailto:mateus.g.spencer@tecnico.ulisboa.pt> |
 | 83897  | Goncalo Correia   | <https://github.com/layko88>     | <mailto:goncalo.t.correia@tecnico.ulisboa.pt>|
-| 33333  | Charlie Rules     | <https://github.com/CharlieUser> | <mailto:charlie@tecnico.ulisboa.pt>          |
+| 96656  | Joaquim Bação     | <https://github.com/joaquimlbacao-ist> | <mailto:joaquimluzbacao@tecnico.ulisboa.pt>  |
 
 ## Getting Started
 

@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.grpc.StatusRuntimeException;
 
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
@@ -24,9 +25,13 @@ public class ClientService {
     }
 
     PutRequest request = PutRequest.newBuilder().setTuple(tuple).build();
-    stub.put(request);
+    try {
+      stub.put(request);
 
-    System.out.println("OK");
+      System.out.println("OK");
+    } catch (StatusRuntimeException e) {
+      System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+    }
   }
 
   public String read(String pattern) {
@@ -35,10 +40,16 @@ public class ClientService {
     }
 
     ReadRequest request = ReadRequest.newBuilder().setPattern(pattern).build();
-    ReadResponse response = stub.read(request);
+    try {
+      ReadResponse response = stub.read(request);
 
-    System.out.println("OK");
-    return response.getResult();
+      System.out.println("OK");
+      return response.getResult();
+    } catch (StatusRuntimeException e) {
+      System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+      return null;
+    }
+
   }
 
   public String take(String pattern) {
@@ -47,10 +58,15 @@ public class ClientService {
     }
 
     TakeRequest request = TakeRequest.newBuilder().setPattern(pattern).build();
-    TakeResponse response = stub.take(request);
+    try {
+      TakeResponse response = stub.take(request);
 
-    System.out.println("OK");
-    return response.getResult();
+      System.out.println("OK");
+      return response.getResult();
+    } catch (StatusRuntimeException e) {
+      System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+      return null;
+    }
   }
 
   public GetTupleSpacesStateResponse getTupleSpacesState() {
@@ -59,9 +75,14 @@ public class ClientService {
     }
     
     GetTupleSpacesStateRequest request = GetTupleSpacesStateRequest.getDefaultInstance();
-    GetTupleSpacesStateResponse response = stub.getTupleSpacesState(request);
+    try {
+      GetTupleSpacesStateResponse response = stub.getTupleSpacesState(request);
 
-    System.out.println("OK");
-    return response;
+      System.out.println("OK");
+      return response;
+    } catch (StatusRuntimeException e) {
+      System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+      return null;
+    }
   }
 }

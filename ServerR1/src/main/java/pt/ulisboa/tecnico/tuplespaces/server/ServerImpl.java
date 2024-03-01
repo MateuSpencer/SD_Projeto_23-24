@@ -3,7 +3,7 @@ package pt.ulisboa.tecnico.tuplespaces.server;
 import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
 
 import io.grpc.stub.StreamObserver;
-import io.grpc.Status;
+import static io.grpc.Status.INVALID_ARGUMENT;
 
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.server.exceptions.TupleAlreadyExistsException;
@@ -23,13 +23,21 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
             System.err.println("Received PutRequest with tuple: " + request.getTuple());
         }
         
-        try {
-        serverState.put(request.getTuple());
+        if(!inputIsValid(request.getTuple())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
+        }
+
+        else {   
+            serverState.put(request.getTuple());
+            responseObserver.onNext(PutResponse.getDefaultInstance());
+            responseObserver.onCompleted();
+        }   
+        /*serverState.put(request.getTuple());
         responseObserver.onNext(PutResponse.getDefaultInstance());
         responseObserver.onCompleted();
         } catch (TupleAlreadyExistsException e) {
             responseObserver.onError(Status.ALREADY_EXISTS.withDescription(e.getMessage()).asRuntimeException());
-        }
+        }*/
         
         if (debug) {
             System.err.println("Sent PutResponse");
@@ -94,6 +102,16 @@ public void take(TakeRequest request, StreamObserver<TakeResponse> responseObser
 
         if (debug) {
             System.err.println("Sent GetTupleSpacesStateResponse with tuples: " + tuples);
+        }
+    }
+
+    private boolean inputIsValid(String input){
+        
+        if ( !input.substring(0,1).equals("<") || !input.endsWith(">")) {
+            return false;
+        }
+        else {
+            return true;
         }
     }
 }

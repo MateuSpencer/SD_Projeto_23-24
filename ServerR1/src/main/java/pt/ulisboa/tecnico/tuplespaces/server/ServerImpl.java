@@ -6,15 +6,22 @@ import io.grpc.stub.StreamObserver;
 import io.grpc.Status;
 
 import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
 import pt.ulisboa.tecnico.tuplespaces.server.exceptions.TupleAlreadyExistsException;
 
 public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
 
     private ServerState serverState = new ServerState();
+    private boolean debug = false;
+
+    public ServerImpl(boolean debug) {
+        this.debug = debug;
+    }
 
     @Override
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
+        if (debug) {
+            System.err.println("Received PutRequest with tuple: " + request.getTuple());
+        }
         
         try {
         serverState.put(request.getTuple());
@@ -24,11 +31,17 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
             responseObserver.onError(Status.ALREADY_EXISTS.withDescription(e.getMessage()).asRuntimeException());
         }
         
-        //System.out.println(request.getTuple()); // TODO: Remove DEBUG
+        if (debug) {
+            System.err.println("Sent PutResponse");
+        }
     }
 
 @Override
 public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
+    if (debug) {
+        System.err.println("Received ReadRequest with pattern: " + request.getPattern());
+    }
+    
     String result = serverState.read(request.getPattern());
 
     ReadResponse response;
@@ -41,11 +54,17 @@ public void read(ReadRequest request, StreamObserver<ReadResponse> responseObser
     responseObserver.onNext(response);
     responseObserver.onCompleted();
 
-    //System.out.println(request.getPattern()); // TODO: Remove DEBUG
+    if (debug) {
+        System.err.println("Sent ReadResponse with result: " + response.getResult());
+    }
 }
 
 @Override
 public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
+    if (debug) {
+        System.err.println("Received TakeRequest with pattern: " + request.getPattern());
+    }
+    
     String result = serverState.take(request.getPattern());
 
     TakeResponse response;
@@ -58,14 +77,23 @@ public void take(TakeRequest request, StreamObserver<TakeResponse> responseObser
     responseObserver.onNext(response);
     responseObserver.onCompleted();
 
-    //System.out.println(request.getPattern()); // TODO: Remove DEBUG
+    if (debug) {
+        System.err.println("Sent TakeResponse with result: " + response.getResult());
+    }
 }
 
     @Override
     public void getTupleSpacesState(GetTupleSpacesStateRequest request, StreamObserver<GetTupleSpacesStateResponse> responseObserver) {
-        
+        if (debug) {
+            System.err.println("Received GetTupleSpacesStateRequest");
+        }
+
         java.util.List<String> tuples = serverState.getTupleSpacesState();
         responseObserver.onNext(GetTupleSpacesStateResponse.newBuilder().addAllTuple(tuples).build());
         responseObserver.onCompleted();
+
+        if (debug) {
+            System.err.println("Sent GetTupleSpacesStateResponse with tuples: " + tuples);
+        }
     }
 }

@@ -5,28 +5,35 @@ import io.grpc.Server;
 import io.grpc.ServerBuilder;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 public class ServerMain {
 
   public static void main(String[] args) throws IOException, InterruptedException {
 
-    /*System.out.println(ServerMain.class.getSimpleName());
+    boolean debug = Arrays.asList(args).contains("-debug");
 
-    // receive and print arguments
-    System.out.printf("Received %d arguments%n", args.length);
-    for (int i = 0; i < args.length; i++) {
-      System.out.printf("arg[%d] = %s%n", i, args[i]);
-    }*/
+    if(debug){
+      System.out.println("Debug mode enabled");
+
+      System.out.println(ServerMain.class.getSimpleName());
+
+      // receive and print arguments
+      System.out.printf("Received %d arguments%n", args.length);
+      for (int i = 0; i < args.length; i++) {
+        System.out.printf("arg[%d] = %s%n", i, args[i]);
+      }
+    }
 
     // check arguments
-    if (args.length != 2) {
+    if ((debug && args.length != 3) || (!debug && args.length != 2)) {
       System.err.println("Argument(s) missing!");
-      System.err.println("Usage: mvn exec:java -Dexec.args=<host> <qual>");
+      System.err.printf("Usage: mvn exec:java -Dexec.args=<host> <qual> %s\n", debug ? "<-debug>" : "");
       return;
     }
 
     final int port = Integer.parseInt(args[0]);
-    final BindableService impl = new ServerImpl();
+    final BindableService impl = new ServerImpl(debug);
 
     // Create a new server to listen on port
     Server server = ServerBuilder.forPort(port).addService(impl).build();

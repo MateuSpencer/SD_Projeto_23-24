@@ -28,12 +28,12 @@ message lookupResponse {
   repeated ServerInfo serverInfo = 1;
 }
 
-message DeleteServerRequest {
+message deleteRequest {
   string serviceName = 1;
   ServerAddress address = 2;
 }
 
-message DeleteServerResponse {}
+message deleteResponse {}
 
 service NamingServerService {
   rpc register(registerRequest) returns (registerResponse) {}

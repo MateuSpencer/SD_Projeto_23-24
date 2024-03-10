@@ -6,7 +6,7 @@ message ServerAddress {
   int32 port = 2;
 }
 
-message ServerInfo {
+message ServerEntry  {
   ServerAddress address = 1;
   string qualifier = 2;
 }
@@ -25,7 +25,7 @@ message lookupRequest {
 }
 
 message lookupResponse {
-  repeated ServerInfo serverInfo = 1;
+  repeated ServerEntry  ServerEntry = 1;
 }
 
 message deleteRequest {

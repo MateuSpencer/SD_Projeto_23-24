@@ -1,6 +1,8 @@
 syntax = "proto3";
 package pt.ulisboa.tecnico.nameserver.contract;
 
+option java_multiple_files = true;
+
 message ServerAddress {
   string host = 1;
   int32 port = 2;
@@ -11,32 +13,32 @@ message ServerEntry  {
   string qualifier = 2;
 }
 
-message registerRequest {
+message RegisterRequest {
   string serviceName = 1;
   ServerAddress address = 2;
   string qualifier = 3;
 }
 
-message registerResponse {}
+message RegisterResponse {}
 
-message lookupRequest {
+message LookUpRequest {
   string serviceName = 1;
   string qualifier = 2;
 }
 
-message lookupResponse {
+message LookUpResponse {
   repeated ServerEntry  ServerEntry = 1;
 }
 
-message deleteRequest {
+message DeleteRequest {
   string serviceName = 1;
   ServerAddress address = 2;
 }
 
-message deleteResponse {}
+message DeleteResponse {}
 
 service NamingServerService {
-  rpc register(registerRequest) returns (registerResponse) {}
-  rpc lookup(lookupRequest) returns (lookupResponse) {}
-  rpc delete(deleteRequest) returns (deleteResponse) {}
+  rpc register(RegisterRequest) returns (RegisterResponse) {}
+  rpc lookup(LookUpRequest) returns (LookUpResponse) {}
+  rpc delete(DeleteRequest) returns (DeleteResponse) {}
 }

@@ -21,8 +21,8 @@
 		<version.protobuf-maven-plugin>0.6.1</version.protobuf-maven-plugin>
 		<version.maven-compiler-plugin>3.8.1</version.maven-compiler-plugin>
 
-		<version.grpc>1.36.0</version.grpc>
-		<version.protoc>3.12.0</version.protoc><!-- aligned with the gRPC dependency version -->
+		<version.grpc>1.60.1</version.grpc>
+		<version.protoc>3.19.1</version.protoc><!-- aligned with the gRPC dependency version -->
 		<version.javax.annotation-api>1.3.2</version.javax.annotation-api>
 	</properties>
 

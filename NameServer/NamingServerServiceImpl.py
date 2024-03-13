@@ -42,9 +42,9 @@ class NamingServerServiceImpl (pb2_grpc.NamingServerServiceServicer):
                 server_entries = [se for se in service_entry.server_entries if se.qualifier == request.qualifier]
             else:
                 server_entries = service_entry.server_entries
-            return pb2.lookupResponse(ServerEntry=server_entries)
+            return pb2.LookUpResponse(ServerEntry=server_entries)
         else:
-            return pb2.lookupResponse()
+            return pb2.LookUpResponse()
     
     def delete(self, request, context):
         if self.debug:

@@ -2,9 +2,9 @@ import sys
 sys.path.insert(1, '../contract/target/generated-sources/protobuf/python')
 import NameServer_pb2 as pb2
 import NameServer_pb2_grpc as pb2_grpc
-from naming_server import NamingServer
-from service_entry import ServiceEntry
-from server_entry import ServerEntry
+from NamingServer import NamingServer
+from ServiceEntry import ServiceEntry
+from ServerEntry import ServerEntry
 
 class NamingServerServiceImpl (pb2_grpc.NamingServerServiceServicer):
 

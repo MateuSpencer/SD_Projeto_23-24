@@ -32,6 +32,8 @@ public class ServerMain {
       return;
     }
 
+    //TODO NameServer request
+    
     final int port = Integer.parseInt(args[0]);
     final BindableService impl = new ServerImpl(debug);
 

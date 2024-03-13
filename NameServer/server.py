@@ -19,7 +19,7 @@ if __name__ == '__main__':
         # create server
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
         # add service
-        pb2_grpc.add_HelloWorldServiceServicer_to_server(NamingServerServiceImpl(), server) # TODO: extract and pass debug flag
+        pb2_grpc.add_NamingServerServiceServicer_to_server(NamingServerServiceImpl(), server) # TODO: extract and pass debug flag
         # listen on port
         server.add_insecure_port('[::]:'+str(PORT))
         # start server

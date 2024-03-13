@@ -102,10 +102,17 @@ public class ClientService {
     try {
       LookUpResponse response = namingServerStub.lookup(request);
 
-      //TODO: handle response
-      System.out.println("OK");
-
-      return ""; //TODO: return 
+      if (response != null && response.getServerEntryCount() > 0) {
+        ServerEntry serverEntry = response.getServerEntry(0); // Assuming only one ServerEntry is returned
+        ServerAddress serverAddress = serverEntry.getAddress();
+        String host = serverAddress.getHost();
+        int port = serverAddress.getPort();
+        System.out.println("Host: " + host + ", Port: " + port);
+        return host + ":" + port;
+      } else {
+        System.out.println("No server entry found with service name: " + serviceName + " and qualifier: " + qualifier);
+        return null;
+      }
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " + e.getStatus().getDescription());
       return null;

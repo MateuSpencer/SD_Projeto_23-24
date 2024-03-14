@@ -8,7 +8,7 @@ from ServerEntry import ServerEntry
 
 class NamingServerServiceImpl (pb2_grpc.NamingServerServiceServicer):
 
-    def __init__(self, debug=False, *args, **kwargs):
+    def __init__(self, debug=True, *args, **kwargs):
         self.naming_server = NamingServer()
         self.debug = debug
 
@@ -28,7 +28,7 @@ class NamingServerServiceImpl (pb2_grpc.NamingServerServiceServicer):
                     raise Exception("Not possible to register the server")
         self.naming_server.service_map[request.serviceName].add_server_entry(server_entry)
         
-        return pb2.registerResponse()
+        return pb2.RegisterResponse()
     
     def lookup(self, request, context):
         if self.debug:
@@ -56,6 +56,6 @@ class NamingServerServiceImpl (pb2_grpc.NamingServerServiceServicer):
             service_entry = self.naming_server.service_map[request.serviceName]
             server_entries = [se for se in service_entry.server_entries if se.host != request.address.host or se.port != request.address.port]
             service_entry.server_entries = server_entries
-            return pb2.deleteResponse()
+            return pb2.DeleteResponse()
         else:
             raise Exception("Not possible to remove the server")

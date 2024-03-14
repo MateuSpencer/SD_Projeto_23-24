@@ -3,6 +3,7 @@ package pt.ulisboa.tecnico.tuplespaces.server;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import pt.ulisboa.tecnico.tuplespaces.server.grpc.ServerService;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -11,6 +12,8 @@ public class ServerMain {
 
   public static void main(String[] args) throws IOException, InterruptedException {
 
+    final String namingServerHost = "localhost";
+    final String namingServerPort = "5001";
     boolean debug = Arrays.asList(args).contains("-debug");
 
     if(debug){
@@ -32,9 +35,14 @@ public class ServerMain {
       return;
     }
 
-    //TODO NameServer request
-    
     final int port = Integer.parseInt(args[0]);
+    final String qualifier = args[1];
+    final String host = "localhost";
+    final String serviceName = "TupleSpace";
+
+    // Create a ServerService and register the server
+    ServerService serverService = new ServerService(namingServerHost, namingServerPort, debug);
+    serverService.register(serviceName, host, port, qualifier);
     final BindableService impl = new ServerImpl(debug);
 
     // Create a new server to listen on port
@@ -46,8 +54,12 @@ public class ServerMain {
     // Server threads are running in the background.
     System.out.println("Server started");
 
+    // Add a shutdown hook to call delete when the server terminates
+    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+      serverService.delete(serviceName, host, port);
+    }));
+
     // Do not exit the main thread. Wait until server is terminated.
     server.awaitTermination();
-
   }
 }

@@ -7,6 +7,8 @@ import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 public class ClientMain {
     public static void main(String[] args) {
 
+        final String namingServerHost = "localhost";
+        final String namingServerPort = "5001";
         boolean debug = Arrays.asList(args).contains("-debug");
 
         if(debug){
@@ -21,20 +23,14 @@ public class ClientMain {
             }
         }
 
-        
-
         // check arguments
-        if ((debug && args.length != 3) || (!debug && args.length != 2)) {
-            System.err.println("Argument(s) missing!");
-            System.err.printf("Usage: mvn exec:java -Dexec.args=<host> <port> %s\n", debug ? "<-debug>" : "");
+        if ((debug && args.length != 1) || (!debug && args.length != 0)) {
+            System.err.println("Invalid number of arguments");
+            System.err.printf("Usage: mvn exec:java%s\n", debug ? " -Dexec.args= <-debug>" : "");
             return;
         }
 
-        // get the host and the port
-        final String host = args[0];
-        final String port = args[1];
-
-        CommandProcessor parser = new CommandProcessor(new ClientService(host, port, debug));
+        CommandProcessor parser = new CommandProcessor(new ClientService(namingServerHost, namingServerPort, debug));
         parser.parseInput();
 
     }

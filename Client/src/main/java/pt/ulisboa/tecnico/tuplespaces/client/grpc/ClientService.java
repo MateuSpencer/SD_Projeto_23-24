@@ -3,13 +3,14 @@ package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
+import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
+import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.nameserver.contract.*;
 
 public class ClientService {
 
-  private final TupleSpacesGrpc.TupleSpacesBlockingStub tupleSpacesStub;
   private final NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
+  private TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub tupleSpacesStub; //TODO: should be non blocking stub
   private boolean debug = false;
 
   public ClientService(String host, String port, boolean debug) {
@@ -17,13 +18,14 @@ public class ClientService {
 
     final String target = host + ":" + port;
 
-    // Set up tuple spaces gRPC stub
-    final ManagedChannel tupleSpacesChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-    this.tupleSpacesStub = TupleSpacesGrpc.newBlockingStub(tupleSpacesChannel);
-
     // Set up naming server gRPC stub
     final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
+
+    // Set up tuple spaces gRPC stub
+    // TODO: this should probably happen on lookup and not with this target of course
+    final ManagedChannel tupleSpacesChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+    this.tupleSpacesStub = TupleSpacesReplicaGrpc.newBlockingStub(tupleSpacesChannel);//TODO: should be non blocking stub
   }
 
   public void put(String tuple) {
@@ -31,7 +33,7 @@ public class ClientService {
       System.err.println("Putting tuple: " + tuple);
     }
 
-    PutRequest request = PutRequest.newBuilder().setTuple(tuple).build();
+    PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
     try {
       tupleSpacesStub.put(request);
 
@@ -46,7 +48,7 @@ public class ClientService {
       System.err.println("Reading with pattern: " + pattern);
     }
 
-    ReadRequest request = ReadRequest.newBuilder().setPattern(pattern).build();
+    ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
     try {
       ReadResponse response = tupleSpacesStub.read(request);
 
@@ -64,26 +66,26 @@ public class ClientService {
       System.err.println("Taking with pattern: " + pattern);
     }
 
-    TakeRequest request = TakeRequest.newBuilder().setPattern(pattern).build();
+    TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).build();
     try {
-      TakeResponse response = tupleSpacesStub.take(request);
+      TakePhase1Response response = tupleSpacesStub.takePhase1(request);
 
       System.out.println("OK");
-      return response.getResult();
+      return "TODO - here just to compile";//response.getResult();
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " + e.getStatus().getDescription());
       return null;
     }
   }
 
-  public GetTupleSpacesStateResponse getTupleSpacesState() {
+  public getTupleSpacesStateResponse getTupleSpacesState() {
     if (debug) {
       System.err.println("Getting tuple spaces state");
     }
 
-    GetTupleSpacesStateRequest request = GetTupleSpacesStateRequest.getDefaultInstance();
+    getTupleSpacesStateRequest request = getTupleSpacesStateRequest.getDefaultInstance();
     try {
-      GetTupleSpacesStateResponse response = tupleSpacesStub.getTupleSpacesState(request);
+      getTupleSpacesStateResponse response = tupleSpacesStub.getTupleSpacesState(request);
 
       System.out.println("OK");
       return response;

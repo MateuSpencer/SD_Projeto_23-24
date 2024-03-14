@@ -5,10 +5,10 @@ import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.*;
+import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.server.exceptions.TupleAlreadyExistsException;
 
-public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
+public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBase{
 
     private ServerState serverState = new ServerState();
     private boolean debug = false;
@@ -20,15 +20,15 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
     @Override
     public void put(PutRequest request, StreamObserver<PutResponse> responseObserver) {
         if (debug) {
-            System.err.println("Received PutRequest with tuple: " + request.getTuple());
+            System.err.println("Received PutRequest with tuple: " + request.getNewTuple());
         }
         
-        if(!inputIsValid(request.getTuple())){
+        if(!inputIsValid(request.getNewTuple())){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
         }
 
         else {   
-            serverState.put(request.getTuple());
+            serverState.put(request.getNewTuple());
             responseObserver.onNext(PutResponse.getDefaultInstance());
             responseObserver.onCompleted();
         }   
@@ -41,15 +41,15 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
     @Override
     public void read(ReadRequest request, StreamObserver<ReadResponse> responseObserver) {
         if (debug) {
-            System.err.println("Received ReadRequest with pattern: " + request.getPattern());
+            System.err.println("Received ReadRequest with pattern: " + request.getSearchPattern());
         }
         
-        if(!inputIsValid(request.getPattern())){
+        if(!inputIsValid(request.getSearchPattern())){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
         }
 
         else {   
-            String result = serverState.read(request.getPattern());
+            String result = serverState.read(request.getSearchPattern());
 
             ReadResponse response;
             if (result != null) {
@@ -68,42 +68,42 @@ public class ServerImpl extends TupleSpacesGrpc.TupleSpacesImplBase{
     }
 
     @Override
-    public void take(TakeRequest request, StreamObserver<TakeResponse> responseObserver) {
+    public void takePhase1(TakePhase1Request request, StreamObserver<TakePhase1Response> responseObserver) {
         if (debug) {
-            System.err.println("Received TakeRequest with pattern: " + request.getPattern());
+            System.err.println("Received TakeRequest with pattern: " + request.getSearchPattern());
         }
         
-        if(!inputIsValid(request.getPattern())){
+        if(!inputIsValid(request.getSearchPattern())){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
         }
 
         else {
-            String result = serverState.take(request.getPattern());
+            String result = serverState.take(request.getSearchPattern());
 
-            TakeResponse response;
+            TakePhase1Response response;
             if (result != null) {
-                response = TakeResponse.newBuilder().setResult(result).build();
+                // TODOresponse = TakePhase1Response.newBuilder().setResult(result).build();
             } else {
-                response = TakeResponse.newBuilder().build();
+                response = TakePhase1Response.newBuilder().build();
             }
 
-            responseObserver.onNext(response);
+            // TODO responseObserver.onNext(response);
             responseObserver.onCompleted();
 
             if (debug) {
-                System.err.println("Sent TakeResponse with result: " + response.getResult());
+                //TODO System.err.println("Sent TakeResponse with result: " + response.getResult());
             }
         }
     }
 
     @Override
-    public void getTupleSpacesState(GetTupleSpacesStateRequest request, StreamObserver<GetTupleSpacesStateResponse> responseObserver) {
+    public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
         if (debug) {
             System.err.println("Received GetTupleSpacesStateRequest");
         }
 
         java.util.List<String> tuples = serverState.getTupleSpacesState();
-        responseObserver.onNext(GetTupleSpacesStateResponse.newBuilder().addAllTuple(tuples).build());
+        responseObserver.onNext(getTupleSpacesStateResponse.newBuilder().addAllTuple(tuples).build());
         responseObserver.onCompleted();
 
         if (debug) {

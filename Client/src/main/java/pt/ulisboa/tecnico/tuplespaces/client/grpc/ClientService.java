@@ -11,6 +11,7 @@ import pt.ulisboa.tecnico.nameserver.contract.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientService {
 
@@ -75,21 +76,57 @@ public class ClientService {
   }
 
   public String read(String pattern) {
-    /*if (debug) {
-      System.err.println("Reading with pattern: " + pattern);
+    //caso nao haja resposta, tentar novamente
+    while (true) {
+        if (debug) {
+            System.err.println("Reading with pattern: " + pattern);
+        }
+        //lista de futuros
+        List<CompletableFuture<String>> futures = new ArrayList<>();
+
+        //envia pedido de leitura a todos os replicas
+        for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
+            ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
+
+            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
+                try {
+                   final AtomicReference<String> result = new AtomicReference<>();
+                    StreamObserver<ReadResponse> responseObserver = new StreamObserver<ReadResponse>() {
+                      @Override
+                      public void onNext(ReadResponse response) {
+                          result.set(response.getResult());
+                      }
+
+                      @Override
+                      public void onError(Throwable t) {
+                          System.out.println("Caught exception with description: " + t.getMessage());
+                      }
+
+                      @Override
+                      public void onCompleted() {
+                          // Handle completion if necessary
+                      }
+                  };
+
+                  stub.read(request, responseObserver);
+                  return result.get();
+                } catch (StatusRuntimeException e) {
+                    System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+                    return null;
+                }
+            });
+
+            futures.add(future);
+        }
+        //espera por uma resposta
+        CompletableFuture<Object> anyFuture = CompletableFuture.anyOf(futures.toArray(new CompletableFuture[0]));
+        //se houver resposta, retorna
+        String result = (String) anyFuture.join();
+
+        if (result != null) {
+            return result;
+        }
     }
-
-    ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
-    try {
-      ReadResponse response = tupleSpacesStubs.read(request); //TODO: 
-
-      System.out.println("OK");
-      return response.getResult();
-    } catch (StatusRuntimeException e) {
-      System.out.println("Caught exception with description: " + e.getStatus().getDescription());
-      return null;
-    }*/
-    return null;//TODO: remove
   }
 
   public String take(String pattern) {

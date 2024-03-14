@@ -42,7 +42,13 @@ class NamingServerServiceImpl (pb2_grpc.NamingServerServiceServicer):
                 server_entries = [se for se in service_entry.server_entries if se.qualifier == request.qualifier]
             else:
                 server_entries = service_entry.server_entries
-            return pb2.LookUpResponse(ServerEntry=server_entries)
+            response = pb2.LookUpResponse()
+            for se in server_entries:
+                server_entry = response.ServerEntry.add()
+                server_entry.address.host = se.host
+                server_entry.address.port = se.port
+                server_entry.qualifier = se.qualifier
+            return response
         else:
             return pb2.LookUpResponse()
     

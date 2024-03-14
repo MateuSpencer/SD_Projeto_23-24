@@ -3,12 +3,14 @@ package pt.ulisboa.tecnico.tuplespaces.client.grpc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.nameserver.contract.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public class ClientService {
 
@@ -35,17 +37,45 @@ public class ClientService {
     }
 
     PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
-    try {
-      tupleSpacesStubs.put(request);//TODO: 
 
-      System.out.println("OK");
-    } catch (StatusRuntimeException e) {
-      System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+    // Create a list to hold the futures
+    List<CompletableFuture<PutResponse>> futures = new ArrayList<>();
+
+    // Send the put request to all replicas
+    for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
+        CompletableFuture<PutResponse> future = new CompletableFuture<>();
+        stub.put(request, new StreamObserver<PutResponse>() {
+            @Override
+            public void onNext(PutResponse response) {
+                // The response is received
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                future.completeExceptionally(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                future.complete(null);
+            }
+        });
+        futures.add(future);
     }
+
+    // Wait for all replicas to acknowledge
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        .exceptionally(t -> {
+            System.out.println("Caught exception: " + t.getMessage());
+            return null;
+        })
+        .join();
+
+    System.out.println("OK");
   }
 
   public String read(String pattern) {
-    if (debug) {
+    /*if (debug) {
       System.err.println("Reading with pattern: " + pattern);
     }
 
@@ -58,12 +88,12 @@ public class ClientService {
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " + e.getStatus().getDescription());
       return null;
-    }
-
+    }*/
+    return null;//TODO: remove
   }
 
   public String take(String pattern) {
-    if (debug) {
+    /*if (debug) {
       System.err.println("Taking with pattern: " + pattern);
     }
 
@@ -76,11 +106,12 @@ public class ClientService {
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " + e.getStatus().getDescription());
       return null;
-    }
+    }*/
+    return null; //TODO: remove
   }
 
   public getTupleSpacesStateResponse getTupleSpacesState() {
-    if (debug) {
+    /*if (debug) {
       System.err.println("Getting tuple spaces state");
     }
 
@@ -93,7 +124,8 @@ public class ClientService {
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " + e.getStatus().getDescription());
       return null;
-    }
+    }*/
+    return null;//TODO: remove
   }
 
   public void lookup(String serviceName, String qualifier) {

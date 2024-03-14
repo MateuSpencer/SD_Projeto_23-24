@@ -1,11 +1,10 @@
 package pt.ulisboa.tecnico.tuplespaces.server;
 
-import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
-
 import io.grpc.stub.StreamObserver;
 import static io.grpc.Status.INVALID_ARGUMENT;
 
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
+import pt.ulisboa.tecnico.tuplespaces.server.domain.ServerState;
 import pt.ulisboa.tecnico.tuplespaces.server.exceptions.TupleAlreadyExistsException;
 
 public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBase{

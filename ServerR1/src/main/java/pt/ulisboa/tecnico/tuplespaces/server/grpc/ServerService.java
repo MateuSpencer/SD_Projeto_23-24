@@ -23,10 +23,8 @@ public class ServerService {
       System.err.println("Registering server with port: " + port + " and qualifier: " + qualifier);
     }
     ServerAddress address = ServerAddress.newBuilder().setHost(host).setPort(port).build();
-    System.out.println("adress");
     
     RegisterRequest request = RegisterRequest.newBuilder().setServiceName(serviceName).setAddress(address).setQualifier(qualifier).build();
-    System.out.println("request");
     try {
       RegisterResponse response = this.namingServerStub.register(request);
 

@@ -38,11 +38,12 @@ public class ServerMain {
     final int port = Integer.parseInt(args[0]);
     final String qualifier = args[1];
     final String host = "localhost";
-    final String serviceName = "TupleSpace";
+    final String serviceName = "TupleSpaces";
 
     // Create a ServerService and register the server
     ServerService serverService = new ServerService(namingServerHost, namingServerPort, debug);
     serverService.register(serviceName, host, port, qualifier);
+    
     final BindableService impl = new ServerImpl(debug);
 
     // Create a new server to listen on port

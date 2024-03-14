@@ -193,8 +193,7 @@ public class CommandProcessor {
         String qualifier = split[2];
         //TODO: check argumennts
 
-        String response = this.clientService.lookup(serviceName, qualifier);
-        System.out.println(response);
+        this.clientService.lookup(serviceName, qualifier);
     }
 
     private void printUsage() {

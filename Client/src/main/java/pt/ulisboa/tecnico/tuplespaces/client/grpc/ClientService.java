@@ -7,25 +7,26 @@ import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.nameserver.contract.*;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ClientService {
 
   private final NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
-  private TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub tupleSpacesStub; //TODO: should be non blocking stub
+  private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
   private boolean debug = false;
 
   public ClientService(String host, String port, boolean debug) {
     this.debug = debug;
 
-    final String target = host + ":" + port;
-
+    final String namingServer_target = host + ":" + port;
     // Set up naming server gRPC stub
-    final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+    final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(namingServer_target).usePlaintext().build();
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
 
-    // Set up tuple spaces gRPC stub
-    // TODO: this should probably happen on lookup and not with this target of course
-    final ManagedChannel tupleSpacesChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
-    this.tupleSpacesStub = TupleSpacesReplicaGrpc.newBlockingStub(tupleSpacesChannel);//TODO: should be non blocking stub
+    tupleSpacesStubs = new ArrayList<>();
+    lookup("TupleSpaces", "");
+
   }
 
   public void put(String tuple) {
@@ -35,7 +36,7 @@ public class ClientService {
 
     PutRequest request = PutRequest.newBuilder().setNewTuple(tuple).build();
     try {
-      tupleSpacesStub.put(request);
+      tupleSpacesStubs.put(request);//TODO: 
 
       System.out.println("OK");
     } catch (StatusRuntimeException e) {
@@ -50,7 +51,7 @@ public class ClientService {
 
     ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
     try {
-      ReadResponse response = tupleSpacesStub.read(request);
+      ReadResponse response = tupleSpacesStubs.read(request); //TODO: 
 
       System.out.println("OK");
       return response.getResult();
@@ -68,7 +69,7 @@ public class ClientService {
 
     TakePhase1Request request = TakePhase1Request.newBuilder().setSearchPattern(pattern).build();
     try {
-      TakePhase1Response response = tupleSpacesStub.takePhase1(request);
+      TakePhase1Response response = tupleSpacesStubs.takePhase1(request);//TODO: 
 
       System.out.println("OK");
       return "TODO - here just to compile";//response.getResult();
@@ -85,7 +86,7 @@ public class ClientService {
 
     getTupleSpacesStateRequest request = getTupleSpacesStateRequest.getDefaultInstance();
     try {
-      getTupleSpacesStateResponse response = tupleSpacesStub.getTupleSpacesState(request);
+      getTupleSpacesStateResponse response = tupleSpacesStubs.getTupleSpacesState(request);//TODO: 
 
       System.out.println("OK");
       return response;
@@ -95,29 +96,34 @@ public class ClientService {
     }
   }
 
-  public String lookup(String serviceName, String qualifier) {
+  public void lookup(String serviceName, String qualifier) {
     if (debug) {
       System.err.println("Looking up with service name and qualifier: " + serviceName + qualifier);
     }
+
+    // Clear the stubs list
+    tupleSpacesStubs.clear();
 
     LookUpRequest request = LookUpRequest.newBuilder().setServiceName(serviceName).setQualifier(qualifier).build();
     try {
       LookUpResponse response = namingServerStub.lookup(request);
 
       if (response != null && response.getServerEntryCount() > 0) {
-        ServerEntry serverEntry = response.getServerEntry(0); // Assuming only one ServerEntry is returned
-        ServerAddress serverAddress = serverEntry.getAddress();
-        String host = serverAddress.getHost();
-        int port = serverAddress.getPort();
-        System.out.println("Host: " + host + ", Port: " + port);
-        return host + ":" + port;
+        // For each server address in the response, create a stub
+        for (ServerEntry serverEntry : response.getServerEntryList()) {
+          ServerAddress address = serverEntry.getAddress();
+          ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext().build();
+          TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
+          tupleSpacesStubs.add(stub);
+      }
+      return;
       } else {
         System.out.println("No server entry found with service name: " + serviceName + " and qualifier: " + qualifier);
-        return null;
+        return;
       }
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " + e.getStatus().getDescription());
-      return null;
+      return;
     }
   }
 }

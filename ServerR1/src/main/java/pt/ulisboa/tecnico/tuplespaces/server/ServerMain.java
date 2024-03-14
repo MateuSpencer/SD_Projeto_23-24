@@ -3,6 +3,7 @@ package pt.ulisboa.tecnico.tuplespaces.server;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import io.grpc.StatusRuntimeException;
 import pt.ulisboa.tecnico.tuplespaces.server.grpc.ServerService;
 
 import java.io.IOException;
@@ -42,7 +43,13 @@ public class ServerMain {
 
     // Create a ServerService and register the server
     ServerService serverService = new ServerService(namingServerHost, namingServerPort, debug);
-    serverService.register(serviceName, host, port, qualifier);
+    try {
+      serverService.register(serviceName, host, port, qualifier);
+    } catch (StatusRuntimeException e) {
+      // Handle the exception
+      System.out.println(e.getStatus().getDescription());
+      System.exit(1);
+    }
     
     final BindableService impl = new ServerImpl(debug);
 

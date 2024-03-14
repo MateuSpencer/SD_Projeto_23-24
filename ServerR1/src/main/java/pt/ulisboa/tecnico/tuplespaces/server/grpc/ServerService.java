@@ -18,24 +18,20 @@ public class ServerService {
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
   }
     
-  public void register(String serviceName, String host, int port, String qualifier){
+  public void register(String serviceName, String host, int port, String qualifier) throws StatusRuntimeException {
     if (debug) {
-      System.err.println("Registering server with port: " + port + " and qualifier: " + qualifier);
+        System.err.println("Registering server with port: " + port + " and qualifier: " + qualifier);
     }
     ServerAddress address = ServerAddress.newBuilder().setHost(host).setPort(port).build();
-    
-    RegisterRequest request = RegisterRequest.newBuilder().setServiceName(serviceName).setAddress(address).setQualifier(qualifier).build();
-    try {
-      RegisterResponse response = this.namingServerStub.register(request);
 
-      if (debug) {
+    RegisterRequest request = RegisterRequest.newBuilder().setServiceName(serviceName).setAddress(address).setQualifier(qualifier).build();
+    
+    this.namingServerStub.register(request);
+
+    if (debug) {
         System.err.println("Server registered successfully");
-      }
-      
-    } catch (StatusRuntimeException e) {
-      System.out.println("Caught exception with description: " + e.getStatus().getDescription());
     }
-  } 
+}
 
   public void delete(String serviceName, String host, int port){
     if (debug) {

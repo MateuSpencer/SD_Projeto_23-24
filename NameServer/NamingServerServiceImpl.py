@@ -24,8 +24,12 @@ class NamingServerServiceImpl (pb2_grpc.NamingServerServiceServicer):
             self.naming_server.add_service_entry(request.serviceName, ServiceEntry(request.serviceName))
         else:
             for se in self.naming_server.service_map[request.serviceName].server_entries:
+                if se.qualifier == request.qualifier:
+                    print("A server with the same qualifier already exists")
+                    raise Exception("A server with the same qualifier already exists")
                 if se.host == server_entry.host and se.port == server_entry.port:
-                    raise Exception("Not possible to register the server")
+                    print("A server with the same address already exists")
+                    raise Exception("A server with the same address already exists")
         self.naming_server.service_map[request.serviceName].add_server_entry(server_entry)
         
         return pb2.RegisterResponse()

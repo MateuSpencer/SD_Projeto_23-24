@@ -20,7 +20,7 @@ public class ClientService {
 
   private final NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
   private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
-  private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesBlockingStubs;
+  private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub> tupleSpacesBlockingStubs;
   private List<String> tupleSpacesQualifiers;
   private boolean debug = false;
   private static final String TUPLE_SPACES = "TupleSpaces";
@@ -188,7 +188,7 @@ public class ClientService {
     }
 
     // find the stub with the given qualifier
-    TupleSpacesGrpc.TupleSpacesStub stub = null;
+    TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub stub = null;
     for (int i = 0; i < tupleSpacesQualifiers.size(); i++) {
       if (tupleSpacesQualifiers.get(i).equals(qualifier)) {
         stub = tupleSpacesBlockingStubs.get(i);
@@ -196,18 +196,17 @@ public class ClientService {
       }
     }
 
-    GetTupleSpacesStateRequest request = GetTupleSpacesStateRequest.getDefaultInstance();
+    getTupleSpacesStateRequest request = getTupleSpacesStateRequest.getDefaultInstance();
     try {
-      GetTupleSpacesStateResponse response = stub.getTupleSpacesState(request, null);
+      getTupleSpacesStateResponse response = stub.getTupleSpacesState(request);
       
       System.out.println("OK");
-      return "TODO - here just to compile";//response.getResult();
+      return response;
       } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " +
       e.getStatus().getDescription());
       return null;
       } */
-      return null;
   }
 
   public void lookup(String serviceName, String qualifier) {
@@ -233,7 +232,7 @@ public class ClientService {
           ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext()
               .build();
           TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
-          TupleSpacesReplicaGrpc.TupleSpacesReplicaStub blockingStub = TupleSpacesReplicaGrpc.newStub(channel);
+          TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub blockingStub = TupleSpacesReplicaGrpc.newBlockingStub(channel);
           tupleSpacesStubs.add(stub);
           tupleSpacesBlockingStubs.add(blockingStub);
           tupleSpacesQualifiers.add(serverEntry.getQualifier());

@@ -15,11 +15,11 @@ if __name__ == '__main__':
         print("Received arguments:")
         for i in range(1, len(sys.argv)):
             print("  " + sys.argv[i])
-        
+        debug = "-debug" in sys.argv
         # create server
         server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
         # add service
-        pb2_grpc.add_NamingServerServiceServicer_to_server(NamingServerServiceImpl(), server) # TODO: extract and pass debug flag
+        pb2_grpc.add_NamingServerServiceServicer_to_server(NamingServerServiceImpl(debug), server)
         # listen on port
         server.add_insecure_port('[::]:'+str(PORT))
         # start server

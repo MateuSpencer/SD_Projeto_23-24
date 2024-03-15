@@ -106,7 +106,7 @@ public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBas
         responseObserver.onCompleted();
 
         if (debug) {
-            System.err.println("Sent GetTupleSpacesStateResponse with tuples: " + tuples);
+            System.err.println("Sent getTupleSpacesStateResponse with tuples: " + tuples);
         }
     }
 

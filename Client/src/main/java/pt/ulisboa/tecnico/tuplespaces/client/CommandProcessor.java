@@ -135,7 +135,7 @@ public class CommandProcessor {
         String qualifier = split[1];
 
         // get the tuple spaces state
-        getTupleSpacesStateResponse response = this.clientService.getTupleSpacesState();
+        getTupleSpacesStateResponse response = this.clientService.getTupleSpacesState(qualifier);
         System.out.println(response.getTupleList());
     }
 

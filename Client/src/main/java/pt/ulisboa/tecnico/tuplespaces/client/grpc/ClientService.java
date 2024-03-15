@@ -11,6 +11,9 @@ import pt.ulisboa.tecnico.nameserver.contract.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientService {
@@ -18,6 +21,8 @@ public class ClientService {
   private final NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
   private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
   private boolean debug = false;
+  private static final String TUPLE_SPACES = "TupleSpaces";
+  
 
   public ClientService(String host, String port, boolean debug) {
     this.debug = debug;
@@ -28,11 +33,11 @@ public class ClientService {
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
 
     tupleSpacesStubs = new ArrayList<>();
-    lookup("TupleSpaces", "");
+    lookup(TUPLE_SPACES, ""); //TODO: fazer lookup antes de cada put, read, take etc?
 
   }
 
-  public void put(String tuple) {
+  public void put(String tuple) { //TODO: e se nao todos receberem? nao pode ficar so infinitamente a reenviar
     if (debug) {
       System.err.println("Putting tuple: " + tuple);
     }
@@ -44,35 +49,53 @@ public class ClientService {
 
     // Send the put request to all replicas
     for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
-        CompletableFuture<PutResponse> future = new CompletableFuture<>();
-        stub.put(request, new StreamObserver<PutResponse>() {
-            @Override
-            public void onNext(PutResponse response) {
-                // The response is received
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                future.completeExceptionally(t);
-            }
-
-            @Override
-            public void onCompleted() {
-                future.complete(null);
-            }
-        });
-        futures.add(future);
+        futures.add(sendPutRequest(stub, request));
     }
 
     // Wait for all replicas to acknowledge
-    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
-        .exceptionally(t -> {
-            System.out.println("Caught exception: " + t.getMessage());
-            return null;
-        })
-        .join();
+    boolean allDone = false;
+    while (!allDone) {
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(5, TimeUnit.SECONDS);
+            allDone = true;
+        } catch (InterruptedException | ExecutionException e) {
+            System.out.println("Caught exception: " + e.getMessage());
+            return; // dizer que foi erro?
+        } catch (TimeoutException e) {
+            System.out.println("Timeout reached, resending requests to unacknowledged stubs.");
 
+            // Resend the request to the stubs that have not yet acknowledged
+            for (int i = 0; i < futures.size(); i++) {
+                CompletableFuture<PutResponse> future = futures.get(i);
+                if (!future.isDone()) {
+                    // This stub has not yet acknowledged, resend the request
+                    futures.set(i, sendPutRequest(tupleSpacesStubs.get(i), request));
+                }
+            }
+        }
+    }
     System.out.println("OK");
+  }
+
+  private CompletableFuture<PutResponse> sendPutRequest(TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub, PutRequest request) {
+      CompletableFuture<PutResponse> future = new CompletableFuture<>();
+      stub.put(request, new StreamObserver<PutResponse>() {
+          @Override
+          public void onNext(PutResponse response) {
+              // The response is received
+          }
+
+          @Override
+          public void onError(Throwable t) {
+              future.completeExceptionally(t);
+          }
+
+          @Override
+          public void onCompleted() {
+              future.complete(null);
+          }
+      });
+      return future;
   }
 
   public String read(String pattern) {
@@ -149,11 +172,11 @@ public class ClientService {
     return null; //TODO: remove
   }
 
-  public getTupleSpacesStateResponse getTupleSpacesState() {
+  public getTupleSpacesStateResponse getTupleSpacesState(String qualifier) {
     /*if (debug) {
       System.err.println("Getting tuple spaces state");
     }
-
+    lookup(TUPLE_SPACES, qualifier); //TODO: se qualifier nao for vazio entao retornar o endereço e fazer um blocking stub?
     getTupleSpacesStateRequest request = getTupleSpacesStateRequest.getDefaultInstance();
     try {
       getTupleSpacesStateResponse response = tupleSpacesStubs.getTupleSpacesState(request);//TODO: 
@@ -183,6 +206,9 @@ public class ClientService {
         // For each server address in the response, create a stub
         for (ServerEntry serverEntry : response.getServerEntryList()) {
           ServerAddress address = serverEntry.getAddress();
+          if (debug) {
+            System.err.println("Received server entry: " + address.getHost() + ":" + address.getPort() + "-" + serverEntry.getQualifier());
+          }
           ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext().build();
           TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
           tupleSpacesStubs.add(stub);

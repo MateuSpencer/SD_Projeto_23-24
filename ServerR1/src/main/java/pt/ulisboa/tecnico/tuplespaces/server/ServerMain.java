@@ -65,6 +65,7 @@ public class ServerMain {
     // Add a shutdown hook to call delete when the server terminates
     Runtime.getRuntime().addShutdownHook(new Thread(() -> {
       serverService.delete(serviceName, host, port);
+      serverService.getNamingServerChannel().shutdownNow();
     }));
 
     // Do not exit the main thread. Wait until server is terminated.

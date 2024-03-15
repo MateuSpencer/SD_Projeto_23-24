@@ -7,6 +7,7 @@ import pt.ulisboa.tecnico.nameserver.contract.*;
 
 public class ServerService {
   private final NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
+  private final ManagedChannel namingServerChannel;
   private boolean debug = false;
 
   public ServerService(String host, String port, boolean debug) {
@@ -14,8 +15,12 @@ public class ServerService {
     final String target = host + ":" + port;
 
     // Set up naming server gRPC stub
-    final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
+    this.namingServerChannel = ManagedChannelBuilder.forTarget(target).usePlaintext().build();
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
+  }
+
+  public ManagedChannel getNamingServerChannel() {
+    return namingServerChannel;
   }
 
   public void register(String serviceName, String host, int port, String qualifier) throws StatusRuntimeException {

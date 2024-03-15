@@ -13,8 +13,9 @@ public class ServerState {
 
   }
 
-  public void put(String tuple) {
+  public synchronized void put(String tuple) {
     tuples.add(tuple);
+    notifyAll(); // Notify all threads that are waiting for a tuple to be put
   }
 
   private String getMatchingTuple(String pattern, boolean remove) {
@@ -31,8 +32,19 @@ public class ServerState {
     return null;
   }
 
-  public String read(String pattern) {
-    return getMatchingTuple(pattern, false);
+  public synchronized String read(String pattern) {
+    String result = null;
+    while (result == null) {
+        result = getMatchingTuple(pattern, false);
+        if (result == null) {
+            try {
+                wait(); // Wait if no matching tuple is found
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt(); // Restore the interrupted status
+            }
+        }
+    }
+    return result;
   }
 
   public String take(String pattern) {

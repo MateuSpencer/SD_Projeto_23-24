@@ -112,59 +112,55 @@ public class ClientService {
   }
 
   public String read(String pattern) {
-    // caso nao haja resposta, tentar novamente
-    while (true) {
-      if (debug) {
-        System.err.println("Reading with pattern: " + pattern);
-      }
-      // lista de futuros
-      List<CompletableFuture<String>> futures = new ArrayList<>();
+    if (debug) {
+      System.err.println("Reading with pattern: " + pattern);
+    }
+    // lista de futuros
+    List<CompletableFuture<String>> futures = new ArrayList<>();
 
-      ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
+    ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
 
-      // envia pedido de leitura a todos os replicas
-      for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
-        CompletableFuture<String> future = new CompletableFuture<>();
+    // envia pedido de leitura a todos os replicas
+    for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
+      CompletableFuture<String> future = new CompletableFuture<>();
 
-        StreamObserver<ReadResponse> responseObserver = new StreamObserver<ReadResponse>() {
-          @Override
-          public void onNext(ReadResponse response) {
-            future.complete(response.getResult());
-          }
+      StreamObserver<ReadResponse> responseObserver = new StreamObserver<ReadResponse>() {
+        @Override
+        public void onNext(ReadResponse response) {
+          future.complete(response.getResult());
+        }
 
-          @Override
-          public void onError(Throwable t) {
-            System.out.println("Caught exception with description: " + t.getMessage());
-            future.complete(null);
-          }
-
-          @Override
-          public void onCompleted() {
-            if (!future.isDone()) {
-              future.complete(null);
-            }
-          }
-        };
-
-        try {
-          stub.read(request, responseObserver);
-        } catch (StatusRuntimeException e) {
-          System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+        @Override
+        public void onError(Throwable t) {
+          System.out.println("Caught exception with description: " + t.getMessage());
           future.complete(null);
         }
 
-        futures.add(future);
-      }
-      // espera por uma resposta
-      CompletableFuture<Object> anyFuture = CompletableFuture.anyOf(futures.toArray(new CompletableFuture[0]));
-      // se houver resposta, retorna
-      String result = (String) anyFuture.join();
+        @Override
+        public void onCompleted() {
+          if (!future.isDone()) {
+            future.complete(null);
+          }
+        }
+      };
 
-      if (result != null) {
-        System.out.println("OK");
-        return result;
-      }
+      stub.read(request, responseObserver);
+      futures.add(future);
     }
+
+    CompletableFuture<Object> anyFuture = CompletableFuture.anyOf(futures.toArray(new CompletableFuture[0]));
+    String result = null;
+
+    try {
+    result = (String) anyFuture.get(); // This will block until any future completes
+    if (result != null) {
+        System.out.println("OK");
+    }
+    } catch (InterruptedException | ExecutionException e) {
+        System.out.println("Caught exception while waiting for futures to complete: " + e.getMessage());
+        result = null;
+    }
+    return result;
   }
 
   public String take(String pattern) {

@@ -2,6 +2,7 @@ package pt.ulisboa.tecnico.tuplespaces.client;
 
 import java.util.Arrays;
 
+import io.grpc.ManagedChannel;
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 public class ClientMain {
@@ -30,8 +31,18 @@ public class ClientMain {
             return;
         }
 
-        CommandProcessor parser = new CommandProcessor(new ClientService(namingServerHost, namingServerPort, debug));
-        parser.parseInput();
+        ClientService clientService = new ClientService(namingServerHost, namingServerPort, debug);
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            for (ManagedChannel channel : clientService.getChannels()) {
+                channel.shutdownNow();
+                System.out.println("Channel shutdownNow() called");
+            }
+        }));
+
+        CommandProcessor parser = new CommandProcessor(clientService);
+        parser.parseInput();
+        System.out.println("out");
+        
     }
 }

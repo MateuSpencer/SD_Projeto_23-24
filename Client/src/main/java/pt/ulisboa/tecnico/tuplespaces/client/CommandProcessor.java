@@ -17,7 +17,6 @@ public class CommandProcessor {
     private static final String SET_DELAY = "setdelay";
     private static final String EXIT = "exit";
     private static final String GET_TUPLE_SPACES_STATE = "getTupleSpacesState";
-    private static final String LOOKUP = "lookup";
 
     private final ClientService clientService;
 
@@ -65,10 +64,6 @@ public class CommandProcessor {
                     this.setdelay(split);
                     break;
 
-                case LOOKUP:
-                    this.lookup(split);
-                    break;
-
                 case EXIT:
                     exit = true;
                     break;
@@ -76,7 +71,7 @@ public class CommandProcessor {
                 default:
                     this.printUsage();
                     break;
-             }
+            }
         }
     }
 
@@ -135,8 +130,8 @@ public class CommandProcessor {
         String qualifier = split[1];
 
         // get the tuple spaces state
-        getTupleSpacesStateResponse response = this.clientService.getTupleSpacesState(qualifier);
-        System.out.println(response.getTupleList());
+        String response = this.clientService.getTupleSpacesState(qualifier);
+        //System.out.println(response.getTupleList());
     }
 
     private void sleep(String[] split) {
@@ -181,21 +176,6 @@ public class CommandProcessor {
       System.out.println("TODO: implement setdelay command (only needed in phases 2+3)");
     }
 
-    private void lookup(String[] split) {
-        if (split.length != 3) {
-            this.printUsage();
-            return;            
-        }
-
-        // get the service name
-        String serviceName = split[1];
-        // get the qualifier
-        String qualifier = split[2];
-        //TODO: check argumennts
-
-        this.clientService.lookup(serviceName, qualifier);
-    }
-
     private void printUsage() {
         System.out.println("Usage:\n" +
                 "- put <element[,more_elements]>\n" +
@@ -204,7 +184,6 @@ public class CommandProcessor {
                 "- getTupleSpacesState <server>\n" +
                 "- sleep <integer>\n" +
                 "- setdelay <server> <integer>\n" +
-                "- lookup service_name qualifier\n" +
                 "- exit\n");
     }
 

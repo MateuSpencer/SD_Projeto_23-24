@@ -8,7 +8,6 @@ import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
 import pt.ulisboa.tecnico.nameserver.contract.*;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -18,29 +17,36 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class ClientService {
 
-  private final NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
+  private NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
   private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
   private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub> tupleSpacesBlockingStubs;
   private List<String> tupleSpacesQualifiers;
+  private List<ManagedChannel> channels;
+
   private boolean debug = false;
   private static final String TUPLE_SPACES = "TupleSpaces";
 
-  public ClientService(String host, String port, boolean debug) {
+  public ClientService(String namingServer_host, String namingServer_port, boolean debug) {
     this.debug = debug;
 
-    final String namingServer_target = host + ":" + port;
+    final String namingServer_target = namingServer_host + ":" + namingServer_port;
     // Set up naming server gRPC stub
-    final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(namingServer_target).usePlaintext()
-        .build();
+    final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(namingServer_target).usePlaintext().build();
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
 
     tupleSpacesStubs = new ArrayList<>();
     tupleSpacesBlockingStubs = new ArrayList<>();
     tupleSpacesQualifiers = new ArrayList<>();
+    channels = new ArrayList<>();
 
-    lookup(TUPLE_SPACES, ""); // TODO: fazer lookup antes de cada put, read, take etc?
-
+    lookup(TUPLE_SPACES, "");
+    
+    namingServerChannel.shutdown();
   }
+
+  public List<ManagedChannel> getChannels() {
+    return channels;
+}
 
   public void put(String tuple) { // TODO: e se nao todos receberem? nao pode ficar so infinitamente a reenviar
     if (debug) {
@@ -207,6 +213,7 @@ public class ClientService {
       e.getStatus().getDescription());
       return null;
       } */
+      return null;
   }
 
   public void lookup(String serviceName, String qualifier) {
@@ -214,28 +221,34 @@ public class ClientService {
       System.err.println("Looking up with service name and qualifier: " + serviceName + qualifier);
     }
 
-    // Clear the stubs list
+    // Clear the lists (Redundant since lookup is only called once in the constructor)
     tupleSpacesStubs.clear();
+    tupleSpacesBlockingStubs.clear();
+    tupleSpacesQualifiers.clear();
+    channels.clear();
 
     LookUpRequest request = LookUpRequest.newBuilder().setServiceName(serviceName).setQualifier(qualifier).build();
     try {
       LookUpResponse response = namingServerStub.lookup(request);
 
       if (response != null && response.getServerEntryCount() > 0) {
-        // For each server address in the response, create a stub
+        // For each server address in the response, create a channels and two stubs
         for (ServerEntry serverEntry : response.getServerEntryList()) {
           ServerAddress address = serverEntry.getAddress();
           if (debug) {
-            System.err.println("Received server entry: " + address.getHost() + ":" + address.getPort() + "-"
-                + serverEntry.getQualifier());
+            System.err.println("Received server entry: " + address.getHost() + ":" + address.getPort() + "-" + serverEntry.getQualifier());
           }
-          ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext()
-              .build();
-          TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
-          TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub blockingStub = TupleSpacesReplicaGrpc.newBlockingStub(channel);
-          tupleSpacesStubs.add(stub);
-          tupleSpacesBlockingStubs.add(blockingStub);
+
           tupleSpacesQualifiers.add(serverEntry.getQualifier());
+
+          ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext().build();
+          channels.add(channel); 
+
+          TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
+          tupleSpacesStubs.add(stub);
+
+          TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub blockingStub = TupleSpacesReplicaGrpc.newBlockingStub(channel);
+          tupleSpacesBlockingStubs.add(blockingStub);
         }
         return;
       } else {

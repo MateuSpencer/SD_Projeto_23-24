@@ -84,37 +84,38 @@ public class ClientService {
         //lista de futuros
         List<CompletableFuture<String>> futures = new ArrayList<>();
 
+        ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
+
         //envia pedido de leitura a todos os replicas
         for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
-            ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
+            CompletableFuture<String> future = new CompletableFuture<>();
 
-            CompletableFuture<String> future = CompletableFuture.supplyAsync(() -> {
-                try {
-                   final AtomicReference<String> result = new AtomicReference<>();
-                    StreamObserver<ReadResponse> responseObserver = new StreamObserver<ReadResponse>() {
-                      @Override
-                      public void onNext(ReadResponse response) {
-                          result.set(response.getResult());
-                      }
-
-                      @Override
-                      public void onError(Throwable t) {
-                          System.out.println("Caught exception with description: " + t.getMessage());
-                      }
-
-                      @Override
-                      public void onCompleted() {
-                          // Handle completion if necessary
-                      }
-                  };
-
-                  stub.read(request, responseObserver);
-                  return result.get();
-                } catch (StatusRuntimeException e) {
-                    System.out.println("Caught exception with description: " + e.getStatus().getDescription());
-                    return null;
+            StreamObserver<ReadResponse> responseObserver = new StreamObserver<ReadResponse>() {
+                @Override
+                public void onNext(ReadResponse response) {
+                    future.complete(response.getResult());
                 }
-            });
+
+                @Override
+                public void onError(Throwable t) {
+                    System.out.println("Caught exception with description: " + t.getMessage());
+                    future.complete(null);
+                }
+
+                @Override
+                public void onCompleted() {
+                    if (!future.isDone()) {
+                        future.complete(null);
+                    }
+                }
+            };
+
+            try {
+                stub.read(request, responseObserver);
+            } catch (StatusRuntimeException e) {
+                System.out.println("Caught exception with description: " + e.getStatus().getDescription());
+                future.complete(null);
+            }
 
             futures.add(future);
         }
@@ -124,6 +125,7 @@ public class ClientService {
         String result = (String) anyFuture.join();
 
         if (result != null) {
+            System.out.println("OK");
             return result;
         }
     }

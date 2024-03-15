@@ -26,7 +26,7 @@ public class CommandProcessor {
 
     void parseInput() {
 
-        Scanner scanner = new Scanner(System.in);
+        Scanner scanner = new Scanner(System.in); // TODO: should be closed
         boolean exit = false;
         boolean isFirstTime = true;
 

@@ -5,6 +5,7 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
+import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.nameserver.contract.*;
 
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ public class ClientService {
     return channels;
   }
 
-  public void put(String tuple) { // TODO: e se nao todos receberem? nao pode ficar so infinitamente a reenviar
+  public void put(String tuple) {
     if (debug) {
       System.err.println("Putting tuple: " + tuple);
     }
@@ -61,54 +62,35 @@ public class ClientService {
 
     // Send the put request to all replicas
     for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
-      futures.add(sendPutRequest(stub, request));
+        CompletableFuture<PutResponse> future = new CompletableFuture<>();
+        stub.put(request, new StreamObserver<PutResponse>() {
+            @Override
+            public void onNext(PutResponse response) {
+                // The response is received
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                future.completeExceptionally(t);
+            }
+
+            @Override
+            public void onCompleted() {
+                future.complete(null);
+            }
+        });
+        futures.add(future);
     }
 
     // Wait for all replicas to acknowledge
-    boolean allDone = false;
-    while (!allDone) {
-      try {
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).get(5, TimeUnit.SECONDS);
-        allDone = true;
-      } catch (InterruptedException | ExecutionException e) {
-        System.out.println("Caught exception: " + e.getMessage());
-        return; // dizer que foi erro?
-      } catch (TimeoutException e) {
-        System.out.println("Timeout reached, resending requests to unacknowledged stubs.");
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+        .exceptionally(t -> {
+            System.out.println("Caught exception: " + t.getMessage());
+            return null;
+        })
+        .join();
 
-        // Resend the request to the stubs that have not yet acknowledged
-        for (int i = 0; i < futures.size(); i++) {
-          CompletableFuture<PutResponse> future = futures.get(i);
-          if (!future.isDone()) {
-            // This stub has not yet acknowledged, resend the request
-            futures.set(i, sendPutRequest(tupleSpacesStubs.get(i), request));
-          }
-        }
-      }
-    }
     System.out.println("OK");
-  }
-
-  private CompletableFuture<PutResponse> sendPutRequest(TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub,
-      PutRequest request) {
-    CompletableFuture<PutResponse> future = new CompletableFuture<>();
-    stub.put(request, new StreamObserver<PutResponse>() {
-      @Override
-      public void onNext(PutResponse response) {
-        // The response is received
-      }
-
-      @Override
-      public void onError(Throwable t) {
-        future.completeExceptionally(t);
-      }
-
-      @Override
-      public void onCompleted() {
-        future.complete(null);
-      }
-    });
-    return future;
   }
 
   public String read(String pattern) {

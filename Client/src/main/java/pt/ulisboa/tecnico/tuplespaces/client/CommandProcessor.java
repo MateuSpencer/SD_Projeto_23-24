@@ -70,14 +70,14 @@ public class CommandProcessor {
         }
     }
 
-    private void put(String[] split){
+    private void put(String[] split) {
 
         // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
             return;
         }
-        
+
         // get the tuple
         String tuple = split[1];
 
@@ -85,13 +85,13 @@ public class CommandProcessor {
         this.clientService.put(tuple);
     }
 
-    private void read(String[] split){
+    private void read(String[] split) {
         // check if input is valid
         if (!this.inputIsValid(split)) {
             this.printUsage();
             return;
         }
-        
+
         // get the tuple
         String tuple = split[1];
 
@@ -102,7 +102,7 @@ public class CommandProcessor {
 
     private void getTupleSpacesState(String[] split){
 
-        if (split.length != 2){
+        if (split.length != 2) {
             this.printUsage();
             return;
         }
@@ -114,45 +114,47 @@ public class CommandProcessor {
     }
 
     private void sleep(String[] split) {
-      if (split.length != 2){
-        this.printUsage();
-        return;
-      }
-      Integer time;
+        if (split.length != 2) {
+            this.printUsage();
+            return;
+        }
+        Integer time;
 
-      // checks if input String can be parsed as an Integer
-      try {
-         time = Integer.parseInt(split[1]);
-      } catch (NumberFormatException e) {
-        this.printUsage();
-        return;
-      }
+        // checks if input String can be parsed as an Integer
+        try {
+            time = Integer.parseInt(split[1]);
+        } catch (NumberFormatException e) {
+            this.printUsage();
+            return;
+        }
 
-      try {
-        Thread.sleep(time*1000);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e);
-      }
+        try {
+            Thread.sleep(time * 1000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void setdelay(String[] split) {
-      if (split.length != 3){
-        this.printUsage();
-        return;
-      }
-      String qualifier = split[1];
-      Integer time;
+        if (split.length != 3) {
+            this.printUsage();
+            return;
+        }
 
-      // checks if input String can be parsed as an Integer
-      try {
-        time = Integer.parseInt(split[2]);
-      } catch (NumberFormatException e) {
-        this.printUsage();
-        return;
-      }
+        int qualifier = indexOfServerQualifier(split[1]);
+        if (qualifier == -1)
+            System.out.println("Invalid server qualifier");
+        Integer time;
 
-      // register delay <time> for when calling server <qualifier>
-      System.out.println("TODO: implement setdelay command (only needed in phases 2+3)");
+        // checks if input String can be parsed as an Integer
+        try {
+            time = Integer.parseInt(split[2]);
+        } catch (NumberFormatException e) {
+            this.printUsage();
+            return;
+        }
+
+        this.clientService.setDelay(qualifier, time);
     }
 
     private void printUsage() {
@@ -165,20 +167,31 @@ public class CommandProcessor {
                 "- exit\n");
     }
 
-    private boolean inputIsValid(String[] input){
-        if (input.length < 2 
-            ||
-            !input[1].substring(0,1).equals(BGN_TUPLE) 
-            || 
-            !input[1].endsWith(END_TUPLE)
-            || 
-            input.length > 2
-            ) {
+    private boolean inputIsValid(String[] input) {
+        if (input.length < 2
+                ||
+                !input[1].substring(0, 1).equals(BGN_TUPLE)
+                ||
+                !input[1].endsWith(END_TUPLE)
+                ||
+                input.length > 2) {
             this.printUsage();
             return false;
-        }
-        else {
+        } else {
             return true;
+        }
+    }
+
+    private int indexOfServerQualifier(String qualifier) {
+        switch (qualifier) {
+            case "A":
+                return 0;
+            case "B":
+                return 1;
+            case "C":
+                return 2;
+            default:
+                return -1;
         }
     }
 }

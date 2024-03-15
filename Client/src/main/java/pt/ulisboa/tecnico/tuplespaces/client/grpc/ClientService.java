@@ -7,6 +7,7 @@ import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.nameserver.contract.*;
+import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,14 +22,15 @@ public class ClientService {
   private NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
   private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
   private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub> tupleSpacesBlockingStubs;
-  private List<String> tupleSpacesQualifiers;
   private List<ManagedChannel> channels;
+  OrderedDelayer delayer;
 
   private boolean debug = false;
   private static final String TUPLE_SPACES = "TupleSpaces";
 
   public ClientService(String namingServer_host, String namingServer_port, boolean debug) {
     this.debug = debug;
+    delayer = new OrderedDelayer(3); // TODO: alterar
 
     final String namingServer_target = namingServer_host + ":" + namingServer_port;
     // Set up naming server gRPC stub
@@ -36,9 +38,8 @@ public class ClientService {
         .build();
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
 
-    tupleSpacesStubs = new ArrayList<>();
-    tupleSpacesBlockingStubs = new ArrayList<>();
-    tupleSpacesQualifiers = new ArrayList<>();
+    tupleSpacesStubs = new ArrayList<>(3);
+    tupleSpacesBlockingStubs = new ArrayList<>(3);
     channels = new ArrayList<>();
 
     lookup(TUPLE_SPACES, "");
@@ -134,13 +135,13 @@ public class ClientService {
     String result = null;
 
     try {
-    result = (String) anyFuture.get(); // This will block until any future completes
-    if (result != null) {
+      result = (String) anyFuture.get(); // This will block until any future completes
+      if (result != null) {
         System.out.println("OK");
-    }
+      }
     } catch (InterruptedException | ExecutionException e) {
-        System.out.println("Caught exception while waiting for futures to complete: " + e.getMessage());
-        result = null;
+      System.out.println("Caught exception while waiting for futures to complete: " + e.getMessage());
+      result = null;
     }
     return result;
   }
@@ -150,14 +151,8 @@ public class ClientService {
       System.err.println("Getting tuple spaces state");
     }
 
-    // find the stub with the given qualifier
-    TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub stub = null;
-    for (int i = 0; i < tupleSpacesQualifiers.size(); i++) {
-      if (tupleSpacesQualifiers.get(i).equals(qualifier)) {
-        stub = tupleSpacesBlockingStubs.get(i);
-        break;
-      }
-    }
+    int qualifierPos = indexOfServerQualifier(qualifier);
+    TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub stub = tupleSpacesBlockingStubs.get(qualifierPos);
 
     getTupleSpacesStateRequest request = getTupleSpacesStateRequest.getDefaultInstance();
     try {
@@ -171,6 +166,18 @@ public class ClientService {
     }
   }
 
+  public void setDelay(int id, int delay) {
+    delayer.setDelay(id, delay);
+
+    if (debug) {
+      System.out.println("After setting the delay, I'll test it");
+      for (Integer i : delayer) {
+        System.out.println("Now I can send request to stub[" + i + "]");
+      }
+      System.out.println("Done.");
+    }
+  }
+
   public void lookup(String serviceName, String qualifier) {
     if (debug) {
       System.err.println("Looking up with service name and qualifier: " + serviceName + qualifier);
@@ -180,7 +187,6 @@ public class ClientService {
     // constructor)
     tupleSpacesStubs.clear();
     tupleSpacesBlockingStubs.clear();
-    tupleSpacesQualifiers.clear();
     channels.clear();
 
     LookUpRequest request = LookUpRequest.newBuilder().setServiceName(serviceName).setQualifier(qualifier).build();
@@ -196,18 +202,19 @@ public class ClientService {
                 + serverEntry.getQualifier());
           }
 
-          tupleSpacesQualifiers.add(serverEntry.getQualifier());
+          int qualifierPos = indexOfServerQualifier(serverEntry.getQualifier());
 
           ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext()
               .build();
           channels.add(channel);
 
           TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
-          tupleSpacesStubs.add(stub);
+          tupleSpacesStubs.add(qualifierPos, stub); // Add stub to the tuplespacesstubs list in the position
+                                                    // qualifierPos
 
           TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub blockingStub = TupleSpacesReplicaGrpc
               .newBlockingStub(channel);
-          tupleSpacesBlockingStubs.add(blockingStub);
+          tupleSpacesBlockingStubs.add(qualifierPos, blockingStub);
         }
         return;
       } else {
@@ -217,6 +224,19 @@ public class ClientService {
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " + e.getStatus().getDescription());
       return;
+    }
+  }
+
+  private int indexOfServerQualifier(String qualifier) {
+    switch (qualifier) {
+      case "A":
+        return 0;
+      case "B":
+        return 1;
+      case "C":
+        return 2;
+      default:
+        return -1;
     }
   }
 }

@@ -4,14 +4,7 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.TupleSpacesGrpc;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.GetTupleSpacesStateRequest;
-import pt.ulisboa.tecnico.tuplespaces.centralized.contract.GetTupleSpacesStateResponse;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.PutRequest;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.PutResponse;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.ReadRequest;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.ReadResponse;
+import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
 import pt.ulisboa.tecnico.nameserver.contract.*;
 
 import java.util.ArrayList;
@@ -27,7 +20,7 @@ public class ClientService {
 
   private final NamingServerServiceGrpc.NamingServerServiceBlockingStub namingServerStub;
   private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesStubs;
-  private List<TupleSpacesGrpc.TupleSpacesStub> tupleSpacesBlockingStubs;
+  private List<TupleSpacesReplicaGrpc.TupleSpacesReplicaStub> tupleSpacesBlockingStubs;
   private List<String> tupleSpacesQualifiers;
   private boolean debug = false;
   private static final String TUPLE_SPACES = "TupleSpaces";
@@ -240,7 +233,7 @@ public class ClientService {
           ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext()
               .build();
           TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
-          TupleSpacesGrpc.TupleSpacesStub blockingStub = TupleSpacesGrpc.newStub(channel);
+          TupleSpacesReplicaGrpc.TupleSpacesReplicaStub blockingStub = TupleSpacesReplicaGrpc.newStub(channel);
           tupleSpacesStubs.add(stub);
           tupleSpacesBlockingStubs.add(blockingStub);
           tupleSpacesQualifiers.add(serverEntry.getQualifier());

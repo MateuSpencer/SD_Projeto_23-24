@@ -31,7 +31,8 @@ public class ClientService {
 
     final String namingServer_target = namingServer_host + ":" + namingServer_port;
     // Set up naming server gRPC stub
-    final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(namingServer_target).usePlaintext().build();
+    final ManagedChannel namingServerChannel = ManagedChannelBuilder.forTarget(namingServer_target).usePlaintext()
+        .build();
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
 
     tupleSpacesStubs = new ArrayList<>();
@@ -40,13 +41,13 @@ public class ClientService {
     channels = new ArrayList<>();
 
     lookup(TUPLE_SPACES, "");
-    
+
     namingServerChannel.shutdown();
   }
 
   public List<ManagedChannel> getChannels() {
     return channels;
-}
+  }
 
   public void put(String tuple) { // TODO: e se nao todos receberem? nao pode ficar so infinitamente a reenviar
     if (debug) {
@@ -188,8 +189,8 @@ public class ClientService {
     return null; // TODO: remove
   }
 
-  public String getTupleSpacesState(String qualifier) {
-    /* if (debug) {
+  public getTupleSpacesStateResponse getTupleSpacesState(String qualifier) {
+    if (debug) {
       System.err.println("Getting tuple spaces state");
     }
 
@@ -205,15 +206,13 @@ public class ClientService {
     getTupleSpacesStateRequest request = getTupleSpacesStateRequest.getDefaultInstance();
     try {
       getTupleSpacesStateResponse response = stub.getTupleSpacesState(request);
-      
-      System.out.println("OK");
+
       return response;
-      } catch (StatusRuntimeException e) {
+    } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " +
-      e.getStatus().getDescription());
+          e.getStatus().getDescription());
       return null;
-      } */
-      return null;
+    }
   }
 
   public void lookup(String serviceName, String qualifier) {
@@ -221,7 +220,8 @@ public class ClientService {
       System.err.println("Looking up with service name and qualifier: " + serviceName + qualifier);
     }
 
-    // Clear the lists (Redundant since lookup is only called once in the constructor)
+    // Clear the lists (Redundant since lookup is only called once in the
+    // constructor)
     tupleSpacesStubs.clear();
     tupleSpacesBlockingStubs.clear();
     tupleSpacesQualifiers.clear();
@@ -236,18 +236,21 @@ public class ClientService {
         for (ServerEntry serverEntry : response.getServerEntryList()) {
           ServerAddress address = serverEntry.getAddress();
           if (debug) {
-            System.err.println("Received server entry: " + address.getHost() + ":" + address.getPort() + "-" + serverEntry.getQualifier());
+            System.err.println("Received server entry: " + address.getHost() + ":" + address.getPort() + "-"
+                + serverEntry.getQualifier());
           }
 
           tupleSpacesQualifiers.add(serverEntry.getQualifier());
 
-          ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext().build();
-          channels.add(channel); 
+          ManagedChannel channel = ManagedChannelBuilder.forAddress(address.getHost(), address.getPort()).usePlaintext()
+              .build();
+          channels.add(channel);
 
           TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub = TupleSpacesReplicaGrpc.newStub(channel);
           tupleSpacesStubs.add(stub);
 
-          TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub blockingStub = TupleSpacesReplicaGrpc.newBlockingStub(channel);
+          TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub blockingStub = TupleSpacesReplicaGrpc
+              .newBlockingStub(channel);
           tupleSpacesBlockingStubs.add(blockingStub);
         }
         return;

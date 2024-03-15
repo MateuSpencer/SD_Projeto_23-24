@@ -1,6 +1,7 @@
 package pt.ulisboa.tecnico.tuplespaces.client;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.grpc.ManagedChannel;
 import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
@@ -33,10 +34,15 @@ public class ClientMain {
 
         ClientService clientService = new ClientService(namingServerHost, namingServerPort, debug);
 
+        AtomicBoolean cleanupDone = new AtomicBoolean(false);
+
+        // Add a shutdown hook to close all channels when the program exits
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            for (ManagedChannel channel : clientService.getChannels()) {
-                channel.shutdownNow();
-                System.out.println("Channel shutdownNow() called");
+            if (!cleanupDone.get()) {
+                for (ManagedChannel channel : clientService.getChannels()) {
+                    channel.shutdownNow();
+                }
+                cleanupDone.set(true);
             }
         }));
 
@@ -44,5 +50,11 @@ public class ClientMain {
         parser.parseInput();
         System.out.println("out");
         
+        if (!cleanupDone.get()) {
+            for (ManagedChannel channel : clientService.getChannels()) {
+                channel.shutdownNow();
+            }
+            cleanupDone.set(true);
+        }
     }
-}
+}                

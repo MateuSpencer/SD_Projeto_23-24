@@ -67,35 +67,6 @@ public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBas
     }
 
     @Override
-    public void takePhase1(TakePhase1Request request, StreamObserver<TakePhase1Response> responseObserver) {
-        if (debug) {
-            System.err.println("Received TakeRequest with pattern: " + request.getSearchPattern());
-        }
-        
-        if(!inputIsValid(request.getSearchPattern())){
-            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
-        }
-
-        else {
-            String result = serverState.take(request.getSearchPattern());
-
-            TakePhase1Response response;
-            if (result != null) {
-                // TODOresponse = TakePhase1Response.newBuilder().setResult(result).build();
-            } else {
-                response = TakePhase1Response.newBuilder().build();
-            }
-
-            // TODO responseObserver.onNext(response);
-            responseObserver.onCompleted();
-
-            if (debug) {
-                //TODO System.err.println("Sent TakeResponse with result: " + response.getResult());
-            }
-        }
-    }
-
-    @Override
     public void getTupleSpacesState(getTupleSpacesStateRequest request, StreamObserver<getTupleSpacesStateResponse> responseObserver) {
         if (debug) {
             System.err.println("Received GetTupleSpacesStateRequest");

@@ -145,28 +145,6 @@ public class ClientService {
     return result;
   }
 
-  public String take(String pattern) {
-    /*
-     * if (debug) {
-     * System.err.println("Taking with pattern: " + pattern);
-     * }
-     * 
-     * TakePhase1Request request =
-     * TakePhase1Request.newBuilder().setSearchPattern(pattern).build();
-     * try {
-     * TakePhase1Response response = tupleSpacesStubs.takePhase1(request);//TODO:
-     * 
-     * System.out.println("OK");
-     * return "TODO - here just to compile";//response.getResult();
-     * } catch (StatusRuntimeException e) {
-     * System.out.println("Caught exception with description: " +
-     * e.getStatus().getDescription());
-     * return null;
-     * }
-     */
-    return null; // TODO: remove
-  }
-
   public getTupleSpacesStateResponse getTupleSpacesState(String qualifier) {
     if (debug) {
       System.err.println("Getting tuple spaces state");

@@ -47,6 +47,10 @@ public class ServerState {
     return result;
   }
 
+  public synchronized String take(String pattern) {
+    return getMatchingTuple(pattern, true);
+  }
+
   public List<String> getTupleSpacesState() {
     return new ArrayList<>(this.tuples);
   }

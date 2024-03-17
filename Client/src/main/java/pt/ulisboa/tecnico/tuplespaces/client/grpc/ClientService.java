@@ -5,11 +5,11 @@ import io.grpc.ManagedChannelBuilder;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
-import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.TupleSpacesReplicaGrpc;
 import pt.ulisboa.tecnico.nameserver.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -61,33 +61,32 @@ public class ClientService {
     // Create a list to hold the futures
     List<CompletableFuture<PutResponse>> futures = new ArrayList<>();
 
-    // Send the put request to all replicas
-    for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
-        CompletableFuture<PutResponse> future = new CompletableFuture<>();
-        stub.put(request, new StreamObserver<PutResponse>() {
-            @Override
-            public void onNext(PutResponse response) {
-                // The response is received
-            }
+    for (Integer id : delayer) {
+      CompletableFuture<PutResponse> future = new CompletableFuture<>();
+      tupleSpacesStubs.get(id).put(request, new StreamObserver<PutResponse>() {
+        @Override
+        public void onNext(PutResponse response) {
+          // The response is received
+        }
 
-            @Override
-            public void onError(Throwable t) {
-                future.completeExceptionally(t);
-            }
+        @Override
+        public void onError(Throwable t) {
+          future.completeExceptionally(t);
+        }
 
-            @Override
-            public void onCompleted() {
-                future.complete(null);
-            }
-        });
-        futures.add(future);
+        @Override
+        public void onCompleted() {
+          future.complete(null);
+        }
+      });
+      futures.add(future);
     }
 
     // Wait for all replicas to acknowledge
     CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
         .exceptionally(t -> {
-            System.out.println("Caught exception: " + t.getMessage());
-            return null;
+          System.out.println("Caught exception: " + t.getMessage());
+          return null;
         })
         .join();
 
@@ -104,7 +103,7 @@ public class ClientService {
     ReadRequest request = ReadRequest.newBuilder().setSearchPattern(pattern).build();
 
     // envia pedido de leitura a todos os replicas
-    for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
+    for (Integer id : delayer) {
       CompletableFuture<String> future = new CompletableFuture<>();
 
       StreamObserver<ReadResponse> responseObserver = new StreamObserver<ReadResponse>() {
@@ -127,7 +126,7 @@ public class ClientService {
         }
       };
 
-      stub.read(request, responseObserver);
+      tupleSpacesStubs.get(id).read(request, responseObserver);
       futures.add(future);
     }
 
@@ -151,7 +150,7 @@ public class ClientService {
       System.err.println("Getting tuple spaces state");
     }
 
-    int qualifierPos = indexOfServerQualifier(qualifier);
+    Integer qualifierPos = indexOfServerQualifier(qualifier);
     TupleSpacesReplicaGrpc.TupleSpacesReplicaBlockingStub stub = tupleSpacesBlockingStubs.get(qualifierPos);
 
     getTupleSpacesStateRequest request = getTupleSpacesStateRequest.getDefaultInstance();

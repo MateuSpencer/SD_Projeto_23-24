@@ -27,10 +27,14 @@ public class ClientService {
 
   private boolean debug = false;
   private static final String TUPLE_SPACES = "TupleSpaces";
+  private int numServers = 0;
 
-  public ClientService(String namingServer_host, String namingServer_port, boolean debug) {
+  public ClientService(int numServers, boolean debug) {
     this.debug = debug;
-    delayer = new OrderedDelayer(3); // TODO: alterar
+    this.numServers = numServers;
+    final String namingServer_host = "localhost";
+    final String namingServer_port = "5001";
+    delayer = new OrderedDelayer(numServers); // TODO: alterar
 
     final String namingServer_target = namingServer_host + ":" + namingServer_port;
     // Set up naming server gRPC stub
@@ -38,8 +42,8 @@ public class ClientService {
         .build();
     this.namingServerStub = NamingServerServiceGrpc.newBlockingStub(namingServerChannel);
 
-    tupleSpacesStubs = new ArrayList<>(3);
-    tupleSpacesBlockingStubs = new ArrayList<>(3);
+    tupleSpacesStubs = new ArrayList<>(numServers);
+    tupleSpacesBlockingStubs = new ArrayList<>(numServers);
     channels = new ArrayList<>();
 
     lookup(TUPLE_SPACES, "");
@@ -188,7 +192,7 @@ public class ClientService {
     tupleSpacesBlockingStubs.clear();
     channels.clear();
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < numServers; i++) {
       tupleSpacesStubs.add(null);
       tupleSpacesBlockingStubs.add(null);
     }

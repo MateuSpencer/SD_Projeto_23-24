@@ -8,10 +8,8 @@ import pt.ulisboa.tecnico.tuplespaces.client.grpc.ClientService;
 
 public class ClientMain {
     public static void main(String[] args) {
-
-        final String namingServerHost = "localhost";
-        final String namingServerPort = "5001";
         boolean debug = Arrays.asList(args).contains("-debug");
+        final int numServers = 3;
 
         if(debug){
             System.out.println("Debug mode enabled");
@@ -32,7 +30,7 @@ public class ClientMain {
             return;
         }
 
-        ClientService clientService = new ClientService(namingServerHost, namingServerPort, debug);
+        ClientService clientService = new ClientService(numServers, debug);
 
         AtomicBoolean cleanupDone = new AtomicBoolean(false);
 

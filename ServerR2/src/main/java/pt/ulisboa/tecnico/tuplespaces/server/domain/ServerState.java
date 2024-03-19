@@ -6,28 +6,28 @@ import java.util.List;
 
 public class ServerState {
 
-  private List<String> tuples;
+  private List<Tuple> tuples;
+
 
   public ServerState() {
-    this.tuples = new ArrayList<String>();
-
+    this.tuples = new ArrayList<>();
   }
 
   public synchronized void put(String tuple) {
-    tuples.add(tuple);
+    tuples.add(new Tuple(tuple));
     notifyAll(); // Notify all threads that are waiting for a tuple to be put
   }
 
   private String getMatchingTuple(String pattern, boolean remove) {
-    Iterator<String> iterator = this.tuples.iterator();
+    Iterator<Tuple> iterator = this.tuples.iterator();
     while (iterator.hasNext()) {
-      String tuple = iterator.next();
-      if (tuple.matches(pattern)) {
-        if (remove) {
-          iterator.remove();
+        Tuple tuple = iterator.next();
+        if (tuple.getData().matches(pattern)) {
+            if (remove) {
+                iterator.remove();
+            }
+            return tuple.getData();
         }
-        return tuple;
-      }
     }
     return null;
   }
@@ -52,6 +52,12 @@ public class ServerState {
   }
 
   public List<String> getTupleSpacesState() {
-    return new ArrayList<>(this.tuples);
+    List<String> tupleDataList = new ArrayList<>();
+    for (Tuple tuple : this.tuples) {
+        tupleDataList.add(tuple.getData());
+    }
+    return tupleDataList;
   }
 }
+
+

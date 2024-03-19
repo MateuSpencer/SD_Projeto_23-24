@@ -188,6 +188,11 @@ public class ClientService {
     tupleSpacesBlockingStubs.clear();
     channels.clear();
 
+    for (int i = 0; i < 3; i++) {
+      tupleSpacesStubs.add(null);
+      tupleSpacesBlockingStubs.add(null);
+    }
+
     LookUpRequest request = LookUpRequest.newBuilder().setServiceName(serviceName).setQualifier(qualifier).build();
     try {
       LookUpResponse response = namingServerStub.lookup(request);

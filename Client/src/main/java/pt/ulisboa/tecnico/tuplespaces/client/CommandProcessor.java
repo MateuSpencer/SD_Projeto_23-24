@@ -12,6 +12,7 @@ public class CommandProcessor {
     private static final String END_TUPLE = ">";
     private static final String PUT = "put";
     private static final String READ = "read";
+    private static final String TAKE = "take";
     private static final String SLEEP = "sleep";
     private static final String SET_DELAY = "setdelay";
     private static final String EXIT = "exit";
@@ -45,6 +46,10 @@ public class CommandProcessor {
 
                 case READ:
                     this.read(split);
+                    break;
+
+                case TAKE:
+                    this.take(split);
                     break;
 
                 case GET_TUPLE_SPACES_STATE:
@@ -97,6 +102,21 @@ public class CommandProcessor {
 
         // read the tuple
         String response = this.clientService.read(tuple);
+        System.out.println(response);
+    }
+
+    private void take(String[] split){
+        // check if input is valid
+        if (!this.inputIsValid(split)) {
+            this.printUsage();
+            return;
+        }
+        
+       // get the tuple
+        String tuple = split[1];
+
+       // take the tuple
+        String response = this.clientService.take(tuple);
         System.out.println(response);
     }
 

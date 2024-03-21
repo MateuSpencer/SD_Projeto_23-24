@@ -30,7 +30,7 @@ public class ClientMain {
             return;
         }
 
-        ClientService clientService = new ClientService(numServers, debug);
+        ClientService clientService = new ClientService(numServers, debug); //TODO: pass client Id
 
         AtomicBoolean cleanupDone = new AtomicBoolean(false);
 

@@ -9,13 +9,13 @@ import pt.ulisboa.tecnico.nameserver.contract.*;
 import pt.ulisboa.tecnico.tuplespaces.client.util.OrderedDelayer;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ClientService {
 
@@ -28,10 +28,12 @@ public class ClientService {
   private boolean debug = false;
   private static final String TUPLE_SPACES = "TupleSpaces";
   private int numServers = 0;
+  private final int clientId;
 
-  public ClientService(int numServers, boolean debug) {
+  public ClientService(int numServers, int clientId, boolean debug) {
     this.debug = debug;
     this.numServers = numServers;
+    this.clientId = clientId;
     final String namingServer_host = "localhost";
     final String namingServer_port = "5001";
     delayer = new OrderedDelayer(numServers); // TODO: alterar
@@ -148,6 +150,127 @@ public class ClientService {
     }
     return result;
   }
+
+  public String take(String pattern) {
+    if (debug) {
+        System.err.println("Taking with pattern: " + pattern);
+    }
+
+    try {
+      TakePhase1Request takePhase1Request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
+      String target_tuple = takePhase1(takePhase1Request);//TODO: check returns
+
+      TakePhase2Request takePhase2Request = TakePhase2Request.newBuilder().setClientId(clientId).setTuple(target_tuple).build();
+      takePhase2(takePhase2Request);//TODO: check returns
+
+      System.out.println("OK");
+      return target_tuple;
+
+    } catch (StatusRuntimeException e) {
+      System.out.println("Caught exception with description: " +
+      e.getStatus().getDescription());
+      return null;
+    }
+  }
+
+  public String takePhase1(TakePhase1Request takePhase1Request) {
+    // Create a list to hold the futures
+    List<CompletableFuture<TakePhase1Response>> futures = new ArrayList<>();
+
+    for (Integer id : delayer) {
+      CompletableFuture<TakePhase1Response> future = new CompletableFuture<>();
+      tupleSpacesStubs.get(id).takePhase1(takePhase1Request, new StreamObserver<TakePhase1Response>() {
+        @Override
+        public void onNext(TakePhase1Response response) {
+            future.complete(response);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+            // Do nothing
+        }
+      });
+      futures.add(future);
+    }
+
+    // Wait for all replicas to acknowledge
+    try {
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+      List<String> intersection = futures.stream()
+          .map(CompletableFuture::join)
+          .flatMap(response -> response.getReservedTuplesList().stream())
+          .collect(Collectors.toList());
+
+      if (intersection.isEmpty()) {
+        // If intersection is empty, release locks and repeat phase 1
+        TakePhase1ReleaseRequest releaseRequest = TakePhase1ReleaseRequest.newBuilder().setClientId(takePhase1Request.getClientId()).build();
+        for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
+          stub.takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
+            @Override
+            public void onNext(TakePhase1ReleaseResponse response) {
+                // Do nothing
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                // Handle error
+            }
+
+            @Override
+            public void onCompleted() {
+                // Do nothing
+            }
+          });
+        }
+        return takePhase1(takePhase1Request); // Repeat phase 1 (Recursive call)
+      }
+
+      // Select a tuple randomly from the intersection
+      return intersection.get(new Random().nextInt(intersection.size()));
+
+    } catch (CompletionException e) {
+      System.out.println("Caught exception: " + e.getCause().getMessage());
+      return null;
+    }
+}
+
+  public void takePhase2(TakePhase2Request takePhase2Request) {
+    // Create a list to hold the futures
+    List<CompletableFuture<TakePhase2Response>> futures = new ArrayList<>();
+
+    for (Integer id : delayer) {
+      CompletableFuture<TakePhase2Response> future = new CompletableFuture<>();
+      tupleSpacesStubs.get(id).takePhase2(takePhase2Request, new StreamObserver<TakePhase2Response>() {
+        @Override
+        public void onNext(TakePhase2Response response) {
+          future.complete(response);
+        }
+
+        @Override
+        public void onError(Throwable t) {
+            future.completeExceptionally(t);
+        }
+
+        @Override
+        public void onCompleted() {
+          // Do nothing
+        }
+      });
+      futures.add(future);
+    }
+
+    // Wait for all replicas to acknowledge
+    try {
+      CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+    } catch (CompletionException e) {
+      System.out.println("Caught exception: " + e.getCause().getMessage());
+    }
+}
 
   public getTupleSpacesStateResponse getTupleSpacesState(String qualifier) {
     if (debug) {

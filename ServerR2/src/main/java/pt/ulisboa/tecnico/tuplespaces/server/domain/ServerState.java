@@ -3,6 +3,7 @@ package pt.ulisboa.tecnico.tuplespaces.server.domain;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ServerState {
 
@@ -47,8 +48,37 @@ public class ServerState {
     return result;
   }
 
-  public synchronized String take(String pattern) {
-    return getMatchingTuple(pattern, true);
+  public synchronized List<String> reserveTuples(String pattern, int clientId) {
+    List<String> reservedTuples = tuples.stream()
+        .filter(tuple -> !tuple.isLocked() && tuple.getData().matches(pattern))
+        .peek(tuple -> {
+            tuple.setLocked(true);
+            tuple.setClientId(clientId);
+        })
+        .map(Tuple::getData)
+        .collect(Collectors.toList());
+
+    return reservedTuples;
+  }
+
+  public synchronized void releaseTuples(int clientId) {
+    tuples.stream()
+        .filter(tuple -> tuple.getClientId() == clientId)
+        .forEach(tuple -> {
+            tuple.setLocked(false);
+            tuple.setClientId(0); // Reset client ID when the tuple is unlocked
+        });
+  }
+
+  public synchronized void removeTuple(String tupleData, int clientId) {
+    Iterator<Tuple> iterator = tuples.iterator();
+    while (iterator.hasNext()) {
+        Tuple tuple = iterator.next();
+        if (tuple.getData().equals(tupleData) && tuple.getClientId() == clientId) {
+            iterator.remove();
+            break;
+        }
+    }
   }
 
   public List<String> getTupleSpacesState() {

@@ -12,7 +12,6 @@ class Tuple {
         this.data = data;
     }
 
-    // Getters and setters
     public String getData() {
         return data;
     }

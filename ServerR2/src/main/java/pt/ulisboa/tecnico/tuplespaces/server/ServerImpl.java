@@ -1,6 +1,7 @@
 package pt.ulisboa.tecnico.tuplespaces.server;
 
 import io.grpc.stub.StreamObserver;
+import java.util.List;
 import static io.grpc.Status.INVALID_ARGUMENT;
 
 import pt.ulisboa.tecnico.tuplespaces.replicaXuLiskov.contract.*;
@@ -62,6 +63,70 @@ public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBas
 
             if (debug) {
                 System.err.println("Sent ReadResponse with result: " + response.getResult());
+            }
+        }
+    }
+
+    @Override
+    public void takePhase1(TakePhase1Request request, StreamObserver<TakePhase1Response> responseObserver) {
+        if (debug) {
+            System.err.println("Received TakePhase1Request with pattern: " + request.getSearchPattern());
+        }
+
+        if(!inputIsValid(request.getSearchPattern())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
+        } else {
+            List<String> reservedTuples = serverState.reserveTuples(request.getSearchPattern(), request.getClientId());
+
+            TakePhase1Response response = TakePhase1Response.newBuilder()
+                .addAllReservedTuples(reservedTuples)
+                .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            if (debug) {
+                System.err.println("Sent TakePhase1Response with reserved tuples: " + reservedTuples);
+            }
+        }
+    }
+
+    @Override
+    public void takePhase1Release(TakePhase1ReleaseRequest request, StreamObserver<TakePhase1ReleaseResponse> responseObserver) {
+        if (debug) {
+            System.err.println("Received TakePhase1ReleaseRequest from client: " + request.getClientId());
+        }
+
+        serverState.releaseTuples(request.getClientId());
+
+        TakePhase1ReleaseResponse response = TakePhase1ReleaseResponse.newBuilder().build();
+
+        responseObserver.onNext(response);
+        responseObserver.onCompleted();
+
+        if (debug) {
+            System.err.println("Sent TakePhase1ReleaseResponse to client: " + request.getClientId());
+        }
+    }
+
+    @Override
+    public void takePhase2(TakePhase2Request request, StreamObserver<TakePhase2Response> responseObserver) {
+        if (debug) {
+            System.err.println("Received TakePhase2Request with tuple: " + request.getTuple());
+        }
+
+        if(!inputIsValid(request.getTuple())){
+            responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
+        } else {
+            serverState.removeTuple(request.getTuple(), request.getClientId());
+
+            TakePhase2Response response = TakePhase2Response.newBuilder().build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+            if (debug) {
+                System.err.println("Sent TakePhase2Response for tuple: " + request.getTuple());
             }
         }
     }

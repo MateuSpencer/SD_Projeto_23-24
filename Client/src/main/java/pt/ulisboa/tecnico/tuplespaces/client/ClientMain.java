@@ -24,13 +24,15 @@ public class ClientMain {
         }
 
         // check arguments
-        if ((debug && args.length != 1) || (!debug && args.length != 0)) {
+        if ((debug && args.length != 2) || (!debug && args.length != 1)) {
             System.err.println("Invalid number of arguments");
-            System.err.printf("Usage: mvn exec:java%s\n", debug ? " -Dexec.args= <-debug>" : "");
+            System.err.printf("Usage: mvn exec:java%s\n", debug ? " -Dexec.args= <clientId> <-debug>" : " -Dexec.args= <clientId>");
             return;
         }
 
-        ClientService clientService = new ClientService(numServers, debug); //TODO: pass client Id
+        int clientId = Integer.parseInt(args[0]);
+
+        ClientService clientService = new ClientService(numServers, clientId, debug);
 
         AtomicBoolean cleanupDone = new AtomicBoolean(false);
 
@@ -55,4 +57,4 @@ public class ClientMain {
             cleanupDone.set(true);
         }
     }
-}                
+}

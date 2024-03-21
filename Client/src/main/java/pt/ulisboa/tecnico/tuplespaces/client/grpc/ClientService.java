@@ -173,7 +173,7 @@ public class ClientService {
     }
   }
 
-  public String takePhase1(TakePhase1Request takePhase1Request) {
+  public String takePhase1(TakePhase1Request takePhase1Request) { //TODO: error and failure handling
     // Create a list to hold the futures
     List<CompletableFuture<TakePhase1Response>> futures = new ArrayList<>();
 
@@ -239,7 +239,7 @@ public class ClientService {
     }
 }
 
-  public void takePhase2(TakePhase2Request takePhase2Request) {
+  public void takePhase2(TakePhase2Request takePhase2Request) {//TODO: error and failure handling
     // Create a list to hold the futures
     List<CompletableFuture<TakePhase2Response>> futures = new ArrayList<>();
 

@@ -78,8 +78,11 @@ public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBas
         } else {
             List<String> reservedTuples = serverState.reserveTuples(request.getSearchPattern(), request.getClientId());
 
+            boolean requestAccepted = !reservedTuples.isEmpty();
+            
             TakePhase1Response response = TakePhase1Response.newBuilder()
                 .addAllReservedTuples(reservedTuples)
+                .setAccepted(requestAccepted) //Set the accepted field
                 .build();
 
             responseObserver.onNext(response);

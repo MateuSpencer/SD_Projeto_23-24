@@ -16,6 +16,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ClientService {
 
@@ -198,37 +199,52 @@ public class ClientService {
       futures.add(future);
     }
 
+    AtomicInteger acceptedRequests = new AtomicInteger(0);
+
     // Wait for all replicas to acknowledge
     try {
       CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
       List<String> intersection = futures.stream()
           .map(CompletableFuture::join)
-          .flatMap(response -> response.getReservedTuplesList().stream())
+          .flatMap(response -> {
+            // If request was accepted, increment counter
+            if (response.getAccepted()) {
+                acceptedRequests.incrementAndGet();
+            }
+            return response.getReservedTuplesList().stream();
+          })
           .collect(Collectors.toList());
 
-      if (intersection.isEmpty()) {
-        // If intersection is empty, release locks and repeat phase 1
-        TakePhase1ReleaseRequest releaseRequest = TakePhase1ReleaseRequest.newBuilder().setClientId(takePhase1Request.getClientId()).build();
-        for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
-          stub.takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
-            @Override
-            public void onNext(TakePhase1ReleaseResponse response) {
-                // Do nothing
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                // Handle error
-            }
-
-            @Override
-            public void onCompleted() {
-                // Do nothing
-            }
-          });
-        }
-        return takePhase1(takePhase1Request); // Repeat phase 1 (Recursive call)
+      // If a strict majority of requests was accepted or all requests were accepted but the intersection is empty, repeat phase 1
+      if ((acceptedRequests.get() > tupleSpacesStubs.size() / 2 && acceptedRequests.get() < tupleSpacesStubs.size()) || (acceptedRequests.get() == tupleSpacesStubs.size() && intersection.isEmpty())) {
+          return takePhase1(takePhase1Request); // Repeat phase 1 (Recursive call)
       }
+
+      // If a minority of requests was accepted, release locks and repeat phase 1
+      if (acceptedRequests.get() < tupleSpacesStubs.size() / 2) {
+          TakePhase1ReleaseRequest releaseRequest = TakePhase1ReleaseRequest.newBuilder().setClientId(takePhase1Request.getClientId()).build();
+          for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
+              stub.takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
+                  @Override
+                  public void onNext(TakePhase1ReleaseResponse response) {
+                      // Do nothing
+                  }
+
+                  @Override
+                  public void onError(Throwable t) {
+                      // Handle error
+                  }
+
+                  @Override
+                  public void onCompleted() {
+                      // Do nothing
+                  }
+              });
+          }
+          //TODO insert a scaling delay as suggested in MOODLE
+          return takePhase1(takePhase1Request); // Repeat phase 1 (Recursive call)
+      }
+
 
       // Select a tuple randomly from the intersection
       return intersection.get(new Random().nextInt(intersection.size()));

@@ -22,6 +22,7 @@ message TakePhase1Request {
 }
 message TakePhase1Response {
   repeated string reservedTuples = 1;
+  bool accepted = 2;
 }
 
 message TakePhase1ReleaseRequest {

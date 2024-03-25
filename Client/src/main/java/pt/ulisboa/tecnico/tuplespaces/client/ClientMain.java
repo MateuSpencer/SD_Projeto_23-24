@@ -30,6 +30,10 @@ public class ClientMain {
             return;
         }
 
+        if (debug) {
+            System.out.println("Client Id: " + args[0]);
+        }
+
         int clientId = Integer.parseInt(args[0]);
 
         ClientService clientService = new ClientService(numServers, clientId, debug);

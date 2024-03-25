@@ -37,7 +37,7 @@ public class ClientService {
     this.clientId = clientId;
     final String namingServer_host = "localhost";
     final String namingServer_port = "5001";
-    delayer = new OrderedDelayer(numServers); // TODO: alterar
+    delayer = new OrderedDelayer(numServers);
 
     final String namingServer_target = namingServer_host + ":" + namingServer_port;
     // Set up naming server gRPC stub
@@ -183,6 +183,9 @@ public class ClientService {
       tupleSpacesStubs.get(id).takePhase1(takePhase1Request, new StreamObserver<TakePhase1Response>() {
         @Override
         public void onNext(TakePhase1Response response) {
+          if (debug) {
+            System.out.println("Take Phase 1 - Received response:\n" + response + "From replica " + id + "\n");
+          }
             future.complete(response);
         }
 
@@ -217,11 +220,17 @@ public class ClientService {
 
       // If a strict majority of requests was accepted or all requests were accepted but the intersection is empty, repeat phase 1
       if ((acceptedRequests.get() > tupleSpacesStubs.size() / 2 && acceptedRequests.get() < tupleSpacesStubs.size()) || (acceptedRequests.get() == tupleSpacesStubs.size() && intersection.isEmpty())) {
+        if (debug) {
+          System.out.println("Repeating Take Phase 1");
+        }
           return takePhase1(takePhase1Request); // Repeat phase 1 (Recursive call)
       }
 
       // If a minority of requests was accepted, release locks and repeat phase 1
       if (acceptedRequests.get() < tupleSpacesStubs.size() / 2) {
+        if (debug) {
+          System.out.println("Releasing locks and repeating Take Phase 1");
+        }
           TakePhase1ReleaseRequest releaseRequest = TakePhase1ReleaseRequest.newBuilder().setClientId(takePhase1Request.getClientId()).build();
           for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
               stub.takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
@@ -264,6 +273,9 @@ public class ClientService {
       tupleSpacesStubs.get(id).takePhase2(takePhase2Request, new StreamObserver<TakePhase2Response>() {
         @Override
         public void onNext(TakePhase2Response response) {
+          if (debug) {
+            System.out.println("Take Phase 2 successful " + response + "from replica " + id);
+          }
           future.complete(response);
         }
 

@@ -159,7 +159,7 @@ public class ClientService {
 
     try {
       TakePhase1Request takePhase1Request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
-      String target_tuple = takePhase1(takePhase1Request);//TODO: check returns
+      String target_tuple = takePhase1(takePhase1Request, new ArrayList<>());//TODO: check returns
 
       TakePhase2Request takePhase2Request = TakePhase2Request.newBuilder().setClientId(clientId).setTuple(target_tuple).build();
       takePhase2(takePhase2Request);//TODO: check returns
@@ -174,11 +174,17 @@ public class ClientService {
     }
   }
 
-  public String takePhase1(TakePhase1Request takePhase1Request) { //TODO: error and failure handling
+  public String takePhase1(TakePhase1Request takePhase1Request, List<Integer> tupleSpacesStubsTakeIds) { //TODO: error and failure handling
+    if (tupleSpacesStubsTakeIds.isEmpty()) {
+      for (int i = 0; i < numServers; i++) {
+        tupleSpacesStubsTakeIds.add(i);
+      }
+    }
     // Create a list to hold the futures
     List<CompletableFuture<TakePhase1Response>> futures = new ArrayList<>();
-
-    for (Integer id : delayer) {
+    // Create a list for the next tupleSpacesStubsTakeIds
+    List<Integer> nextTupleSpacesStubsTakeIds = new ArrayList<>();
+    for (Integer id : tupleSpacesStubsTakeIds) {
       CompletableFuture<TakePhase1Response> future = new CompletableFuture<>();
       tupleSpacesStubs.get(id).takePhase1(takePhase1Request, new StreamObserver<TakePhase1Response>() {
         @Override
@@ -186,6 +192,10 @@ public class ClientService {
           if (debug) {
             System.out.println("Take Phase 1 - Received response:\n" + response + "From replica " + id + "\n");
           }
+          if (!response.getAccepted()) {
+            nextTupleSpacesStubsTakeIds.add(id);
+          }
+
             future.complete(response);
         }
 
@@ -223,7 +233,7 @@ public class ClientService {
         if (debug) {
           System.out.println("Repeating Take Phase 1");
         }
-          return takePhase1(takePhase1Request); // Repeat phase 1 (Recursive call)
+          return takePhase1(takePhase1Request, nextTupleSpacesStubsTakeIds); // Repeat phase 1 (Recursive call)
       }
 
       // If a minority of requests was accepted, release locks and repeat phase 1
@@ -251,7 +261,7 @@ public class ClientService {
               });
           }
           //TODO insert a scaling delay as suggested in MOODLE
-          return takePhase1(takePhase1Request); // Repeat phase 1 (Recursive call)
+            return takePhase1(takePhase1Request, new ArrayList<>()); // Repeat phase 1 (Recursive call)
       }
 
 
@@ -399,3 +409,4 @@ public class ClientService {
     }
   }
 }
+

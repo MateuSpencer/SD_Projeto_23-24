@@ -49,14 +49,17 @@ public class ServerState {
   }
 
   public synchronized List<String> reserveTuples(String pattern, int clientId) {
-    if (getMatchingTuple(pattern, false) == null) {
-      System.out.println("No matching tuple found");
-      try {
-        wait(); // Wait if no matching tuple is found
-    } catch (InterruptedException e) {
-        Thread.currentThread().interrupt(); // Restore the interrupted status
-    }
-    }
+    String result = null;
+    while (result == null) {
+      result = getMatchingTuple(pattern, false);
+      if (result == null) {
+          try {
+              wait(); // Wait if no matching tuple is found
+          } catch (InterruptedException e) {
+              Thread.currentThread().interrupt(); // Restore the interrupted status
+          }
+      }
+  }
     List<String> reservedTuples = tuples.stream()
         .filter(tuple -> !tuple.isLocked() && tuple.getData().matches(pattern))
         .peek(tuple -> {

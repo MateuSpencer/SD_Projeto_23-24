@@ -47,9 +47,7 @@ public class ClientMain {
         }));
 
         CommandProcessor parser = new CommandProcessor(clientService);
-        parser.parseInput();
-        System.out.println("out");
-        
+        parser.parseInput();        
         if (!cleanupDone.get()) {
             for (ManagedChannel channel : clientService.getChannels()) {
                 channel.shutdownNow();

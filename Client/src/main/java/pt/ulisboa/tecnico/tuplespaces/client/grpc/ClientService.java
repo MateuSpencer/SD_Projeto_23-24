@@ -154,27 +154,31 @@ public class ClientService {
 
   public String take(String pattern) {
     if (debug) {
-        System.err.println("Taking with pattern: " + pattern);
+      System.err.println("Taking with pattern: " + pattern);
     }
 
     try {
-      TakePhase1Request takePhase1Request = TakePhase1Request.newBuilder().setSearchPattern(pattern).setClientId(clientId).build();
-      String target_tuple = takePhase1(takePhase1Request, new ArrayList<>());//TODO: check returns
+      TakePhase1Request takePhase1Request = TakePhase1Request.newBuilder().setSearchPattern(pattern)
+          .setClientId(clientId).build();
+      String target_tuple = takePhase1(takePhase1Request, new ArrayList<>());// TODO: check returns
 
-      TakePhase2Request takePhase2Request = TakePhase2Request.newBuilder().setClientId(clientId).setTuple(target_tuple).build();
-      takePhase2(takePhase2Request);//TODO: check returns
+      TakePhase2Request takePhase2Request = TakePhase2Request.newBuilder().setClientId(clientId).setTuple(target_tuple)
+          .build();
+      takePhase2(takePhase2Request);// TODO: check returns
 
       System.out.println("OK");
       return target_tuple;
 
     } catch (StatusRuntimeException e) {
       System.out.println("Caught exception with description: " +
-      e.getStatus().getDescription());
+          e.getStatus().getDescription());
       return null;
     }
   }
 
-  public String takePhase1(TakePhase1Request takePhase1Request, List<Integer> tupleSpacesStubsTakeIds) { //TODO: error and failure handling
+  public String takePhase1(TakePhase1Request takePhase1Request, List<Integer> tupleSpacesStubsTakeIds) { // TODO: error
+                                                                                                         // and failure
+                                                                                                         // handling
     if (tupleSpacesStubsTakeIds.isEmpty()) {
       for (int i = 0; i < numServers; i++) {
         tupleSpacesStubsTakeIds.add(i);
@@ -184,32 +188,33 @@ public class ClientService {
     List<CompletableFuture<TakePhase1Response>> futures = new ArrayList<>();
     // Create a list for the next tupleSpacesStubsTakeIds
     List<Integer> nextTupleSpacesStubsTakeIds = new ArrayList<>();
-    for (Integer id : tupleSpacesStubsTakeIds) {
-      CompletableFuture<TakePhase1Response> future = new CompletableFuture<>();
-      tupleSpacesStubs.get(id).takePhase1(takePhase1Request, new StreamObserver<TakePhase1Response>() {
-        @Override
-        public void onNext(TakePhase1Response response) {
-          if (debug) {
-            System.out.println("Take Phase 1 - Received response:\n" + response + "From replica " + id + "\n");
-          }
-          if (!response.getAccepted()) {
-            nextTupleSpacesStubsTakeIds.add(id);
-          }
-
+    for (Integer id : delayer) {
+      if (tupleSpacesStubsTakeIds.contains(id)) {
+        CompletableFuture<TakePhase1Response> future = new CompletableFuture<>();
+        tupleSpacesStubs.get(id).takePhase1(takePhase1Request, new StreamObserver<TakePhase1Response>() {
+          @Override
+          public void onNext(TakePhase1Response response) {
+            if (debug) {
+              System.out.println("Take Phase 1 - Received response:\n" + response + "From replica " + id + "\n");
+            }
+            if (!response.getAccepted()) {
+              nextTupleSpacesStubsTakeIds.add(id);
+            }
             future.complete(response);
-        }
+          }
 
-        @Override
-        public void onError(Throwable t) {
+          @Override
+          public void onError(Throwable t) {
             future.completeExceptionally(t);
-        }
+          }
 
-        @Override
-        public void onCompleted() {
+          @Override
+          public void onCompleted() {
             // Do nothing
-        }
-      });
-      futures.add(future);
+          }
+        });
+        futures.add(future);
+      }
     }
 
     AtomicInteger acceptedRequests = new AtomicInteger(0);
@@ -222,48 +227,50 @@ public class ClientService {
           .flatMap(response -> {
             // If request was accepted, increment counter
             if (response.getAccepted()) {
-                acceptedRequests.incrementAndGet();
+              acceptedRequests.incrementAndGet();
             }
             return response.getReservedTuplesList().stream();
           })
           .collect(Collectors.toList());
 
-      // If a strict majority of requests was accepted or all requests were accepted but the intersection is empty, repeat phase 1
-      if ((acceptedRequests.get() > tupleSpacesStubs.size() / 2 && acceptedRequests.get() < tupleSpacesStubs.size()) || (acceptedRequests.get() == tupleSpacesStubs.size() && intersection.isEmpty())) {
+      // If a strict majority of requests was accepted or all requests were accepted
+      // but the intersection is empty, repeat phase 1
+      if ((acceptedRequests.get() > (tupleSpacesStubs.size() / 2) && acceptedRequests.get() < tupleSpacesStubs.size())
+          || (acceptedRequests.get() == tupleSpacesStubs.size() && intersection.isEmpty())) {
         if (debug) {
           System.out.println("Repeating Take Phase 1");
         }
-          return takePhase1(takePhase1Request, nextTupleSpacesStubsTakeIds); // Repeat phase 1 (Recursive call)
+        return takePhase1(takePhase1Request, nextTupleSpacesStubsTakeIds); // Repeat phase 1 (Recursive call)
       }
-
       // If a minority of requests was accepted, release locks and repeat phase 1
-      if (acceptedRequests.get() < tupleSpacesStubs.size() / 2) {
+      
+      if (acceptedRequests.get() < (tupleSpacesStubs.size() / 2)) {
         if (debug) {
           System.out.println("Releasing locks and repeating Take Phase 1");
         }
-          TakePhase1ReleaseRequest releaseRequest = TakePhase1ReleaseRequest.newBuilder().setClientId(takePhase1Request.getClientId()).build();
-          for (TupleSpacesReplicaGrpc.TupleSpacesReplicaStub stub : tupleSpacesStubs) {
-              stub.takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
-                  @Override
-                  public void onNext(TakePhase1ReleaseResponse response) {
-                      // Do nothing
-                  }
+        TakePhase1ReleaseRequest releaseRequest = TakePhase1ReleaseRequest.newBuilder()
+            .setClientId(takePhase1Request.getClientId()).build();
+        for (Integer id : delayer) {
+          tupleSpacesStubs.get(id).takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
+            @Override
+            public void onNext(TakePhase1ReleaseResponse response) {
+              // Do nothing
+            }
 
-                  @Override
-                  public void onError(Throwable t) {
-                      // Handle error
-                  }
+            @Override
+            public void onError(Throwable t) {
+              // Handle error
+            }
 
-                  @Override
-                  public void onCompleted() {
-                      // Do nothing
-                  }
-              });
-          }
-          //TODO insert a scaling delay as suggested in MOODLE
-            return takePhase1(takePhase1Request, new ArrayList<>()); // Repeat phase 1 (Recursive call)
+            @Override
+            public void onCompleted() {
+              // Do nothing
+            }
+          });
+        }
+        // TODO insert a scaling delay as suggested in MOODLE
+        return takePhase1(takePhase1Request, new ArrayList<>()); // Repeat phase 1 (Recursive call)
       }
-
 
       // Select a tuple randomly from the intersection
       return intersection.get(new Random().nextInt(intersection.size()));
@@ -272,9 +279,9 @@ public class ClientService {
       System.out.println("Caught exception: " + e.getCause().getMessage());
       return null;
     }
-}
+  }
 
-  public void takePhase2(TakePhase2Request takePhase2Request) {//TODO: error and failure handling
+  public void takePhase2(TakePhase2Request takePhase2Request) {// TODO: error and failure handling
     // Create a list to hold the futures
     List<CompletableFuture<TakePhase2Response>> futures = new ArrayList<>();
 
@@ -291,7 +298,7 @@ public class ClientService {
 
         @Override
         public void onError(Throwable t) {
-            future.completeExceptionally(t);
+          future.completeExceptionally(t);
         }
 
         @Override
@@ -308,7 +315,7 @@ public class ClientService {
     } catch (CompletionException e) {
       System.out.println("Caught exception: " + e.getCause().getMessage());
     }
-}
+  }
 
   public getTupleSpacesStateResponse getTupleSpacesState(String qualifier) {
     if (debug) {
@@ -345,17 +352,6 @@ public class ClientService {
   public void lookup(String serviceName, String qualifier) {
     if (debug) {
       System.err.println("Looking up with service name and qualifier: " + serviceName + qualifier);
-    }
-
-    // Clear the lists (Redundant since lookup is only called once in the
-    // constructor)
-    tupleSpacesStubs.clear();
-    tupleSpacesBlockingStubs.clear();
-    channels.clear();
-
-    for (int i = 0; i < numServers; i++) {
-      tupleSpacesStubs.add(null);
-      tupleSpacesBlockingStubs.add(null);
     }
 
     LookUpRequest request = LookUpRequest.newBuilder().setServiceName(serviceName).setQualifier(qualifier).build();
@@ -409,4 +405,3 @@ public class ClientService {
     }
   }
 }
-

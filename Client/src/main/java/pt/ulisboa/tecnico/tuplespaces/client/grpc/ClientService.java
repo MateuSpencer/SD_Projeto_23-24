@@ -160,7 +160,7 @@ public class ClientService {
     try {
       TakePhase1Request takePhase1Request = TakePhase1Request.newBuilder().setSearchPattern(pattern)
           .setClientId(clientId).build();
-      String target_tuple = takePhase1(takePhase1Request, new ArrayList<>());// TODO: check returns
+      String target_tuple = takePhase1(takePhase1Request, new ArrayList<>(), new AtomicInteger(0));// TODO: check returns
 
       TakePhase2Request takePhase2Request = TakePhase2Request.newBuilder().setClientId(clientId).setTuple(target_tuple)
           .build();
@@ -176,9 +176,7 @@ public class ClientService {
     }
   }
 
-  public String takePhase1(TakePhase1Request takePhase1Request, List<Integer> tupleSpacesStubsTakeIds) { // TODO: error
-                                                                                                         // and failure
-                                                                                                         // handling
+  public String takePhase1(TakePhase1Request takePhase1Request, List<Integer> tupleSpacesStubsTakeIds, AtomicInteger acceptedRequests) { // TODO: error and failure handling
     if (tupleSpacesStubsTakeIds.isEmpty()) {
       for (int i = 0; i < numServers; i++) {
         tupleSpacesStubsTakeIds.add(i);
@@ -188,6 +186,11 @@ public class ClientService {
     List<CompletableFuture<TakePhase1Response>> futures = new ArrayList<>();
     // Create a list for the next tupleSpacesStubsTakeIds
     List<Integer> nextTupleSpacesStubsTakeIds = new ArrayList<>();
+    List<Integer> acceptedTupleSpacesStubsTakeIds = new ArrayList<>();
+
+    if (debug) {
+      System.out.println("Take Phase 1 - Sending request to servers " + tupleSpacesStubsTakeIds + "\n");
+    }
     for (Integer id : delayer) {
       if (tupleSpacesStubsTakeIds.contains(id)) {
         CompletableFuture<TakePhase1Response> future = new CompletableFuture<>();
@@ -199,6 +202,9 @@ public class ClientService {
             }
             if (!response.getAccepted()) {
               nextTupleSpacesStubsTakeIds.add(id);
+            }
+            else {
+              acceptedTupleSpacesStubsTakeIds.add(id);
             }
             future.complete(response);
           }
@@ -217,8 +223,6 @@ public class ClientService {
       }
     }
 
-    AtomicInteger acceptedRequests = new AtomicInteger(0);
-
     // Wait for all replicas to acknowledge
     try {
       CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
@@ -233,43 +237,53 @@ public class ClientService {
           })
           .collect(Collectors.toList());
 
+
       // If a strict majority of requests was accepted or all requests were accepted
       // but the intersection is empty, repeat phase 1
       if ((acceptedRequests.get() > (tupleSpacesStubs.size() / 2) && acceptedRequests.get() < tupleSpacesStubs.size())
           || (acceptedRequests.get() == tupleSpacesStubs.size() && intersection.isEmpty())) {
         if (debug) {
-          System.out.println("Repeating Take Phase 1");
+          System.out.println("Repeating Take Phase 1 for servers " + nextTupleSpacesStubsTakeIds + "\n");
         }
-        return takePhase1(takePhase1Request, nextTupleSpacesStubsTakeIds); // Repeat phase 1 (Recursive call)
+        return takePhase1(takePhase1Request, nextTupleSpacesStubsTakeIds, acceptedRequests); // Repeat phase 1 (Recursive call)
       }
+
       // If a minority of requests was accepted, release locks and repeat phase 1
-      
-      if (acceptedRequests.get() < (tupleSpacesStubs.size() / 2)) {
+      if (acceptedRequests.get() <= ((double)tupleSpacesStubs.size() / 2)) {
         if (debug) {
-          System.out.println("Releasing locks and repeating Take Phase 1");
+          System.out.println("Releasing locks for servers" + acceptedTupleSpacesStubsTakeIds + "and repeating Take Phase 1");
         }
         TakePhase1ReleaseRequest releaseRequest = TakePhase1ReleaseRequest.newBuilder()
             .setClientId(takePhase1Request.getClientId()).build();
         for (Integer id : delayer) {
-          tupleSpacesStubs.get(id).takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
-            @Override
-            public void onNext(TakePhase1ReleaseResponse response) {
-              // Do nothing
-            }
+          if (acceptedTupleSpacesStubsTakeIds.contains(id)) {
+            tupleSpacesStubs.get(id).takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
+              @Override
+              public void onNext(TakePhase1ReleaseResponse response) {
+                // Do nothing
+              }
 
-            @Override
-            public void onError(Throwable t) {
-              // Handle error
-            }
+              @Override
+              public void onError(Throwable t) {
+                // Handle error
+              }
 
-            @Override
-            public void onCompleted() {
-              // Do nothing
-            }
-          });
+              @Override
+              public void onCompleted() {
+                // Do nothing
+              }
+            });
+          }
         }
         // TODO insert a scaling delay as suggested in MOODLE
-        return takePhase1(takePhase1Request, new ArrayList<>()); // Repeat phase 1 (Recursive call)
+        try {
+          // TODO is this it??
+          Thread.sleep(3000); // Sleep for 3 seconds
+        } catch (InterruptedException e) {
+          // Handle interrupted exception
+        }
+        
+        return takePhase1(takePhase1Request, new ArrayList<>(), new AtomicInteger(0)); // Repeat phase 1 (Recursive call)
       }
 
       // Select a tuple randomly from the intersection

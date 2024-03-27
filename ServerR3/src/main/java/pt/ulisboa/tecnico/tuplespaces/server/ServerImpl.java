@@ -76,6 +76,7 @@ public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBas
         if(!inputIsValid(request.getSearchPattern())){
             responseObserver.onError(INVALID_ARGUMENT.withDescription("Invalid Input").asRuntimeException());
         } else {
+            //O PROBLEMA PARECE ESTAR AQUI
             List<String> reservedTuples = serverState.reserveTuples(request.getSearchPattern(), request.getClientId());
 
             boolean requestAccepted = !reservedTuples.isEmpty();
@@ -87,7 +88,7 @@ public class ServerImpl extends TupleSpacesReplicaGrpc.TupleSpacesReplicaImplBas
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();
-
+            //NESTE BLOCO DE CODIGO
             if (debug) {
                 System.err.println("Sent TakePhase1Response with reserved tuples: " + reservedTuples);
             }

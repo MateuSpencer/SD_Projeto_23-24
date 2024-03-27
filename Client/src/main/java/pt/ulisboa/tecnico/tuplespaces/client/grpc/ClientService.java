@@ -160,11 +160,19 @@ public class ClientService {
     try {
       TakePhase1Request takePhase1Request = TakePhase1Request.newBuilder().setSearchPattern(pattern)
           .setClientId(clientId).build();
-      String target_tuple = takePhase1(takePhase1Request, new ArrayList<>(), new AtomicInteger(0));// TODO: check returns
+      String target_tuple = takePhase1(takePhase1Request, new ArrayList<>(), new AtomicInteger(0));
+
+      if (debug) {
+        System.out.println("Take Phase 1 Completed - Selected tuple: " + target_tuple);
+      }
 
       TakePhase2Request takePhase2Request = TakePhase2Request.newBuilder().setClientId(clientId).setTuple(target_tuple)
           .build();
-      takePhase2(takePhase2Request);// TODO: check returns
+      takePhase2(takePhase2Request);
+      
+      if (debug) {
+        System.out.println("Take Phase 2 Completed. Tuple " + target_tuple + " removed from tuple space.");
+      }
 
       System.out.println("OK");
       return target_tuple;
@@ -176,7 +184,7 @@ public class ClientService {
     }
   }
 
-  public String takePhase1(TakePhase1Request takePhase1Request, List<Integer> tupleSpacesStubsTakeIds, AtomicInteger acceptedRequests) { // TODO: error and failure handling
+  public String takePhase1(TakePhase1Request takePhase1Request, List<Integer> tupleSpacesStubsTakeIds, AtomicInteger acceptedRequests) {
     if (tupleSpacesStubsTakeIds.isEmpty()) {
       for (int i = 0; i < numServers; i++) {
         tupleSpacesStubsTakeIds.add(i);
@@ -260,12 +268,14 @@ public class ClientService {
             tupleSpacesStubs.get(id).takePhase1Release(releaseRequest, new StreamObserver<TakePhase1ReleaseResponse>() {
               @Override
               public void onNext(TakePhase1ReleaseResponse response) {
-                // Do nothing
+                if (debug) {
+                  System.out.println("Lock released for server " + id + " due to minority of requests accepted");
+                }
               }
 
               @Override
               public void onError(Throwable t) {
-                // Handle error
+                System.err.println("Error releasing lock for server " + id + ": " + t.getMessage());
               }
 
               @Override
@@ -275,18 +285,28 @@ public class ClientService {
             });
           }
         }
-        // TODO insert a scaling delay as suggested in MOODLE
+
+        int randomSleepTime = 0;
+
         try {
-          // TODO is this it??
-          Thread.sleep(3000); // Sleep for 3 seconds
+          Random rand = new Random();
+          randomSleepTime = rand.nextInt(13) + 3; // Random sleep time between 3 and 15 seconds
+          Thread.sleep(randomSleepTime * 1000); // Sleep for 3 to 15 seconds
         } catch (InterruptedException e) {
-          // Handle interrupted exception
+          System.out.println("Caught exception while sleeping: " + e.getMessage());
+        }
+
+        if (debug) {
+          System.out.println("Slept for " + randomSleepTime + " seconds. Repeating phase 1.");
         }
         
         return takePhase1(takePhase1Request, new ArrayList<>(), new AtomicInteger(0)); // Repeat phase 1 (Recursive call)
       }
 
       // Select a tuple randomly from the intersection
+      if (debug) {
+        System.out.println("Intersection found: " + intersection);
+      }
       return intersection.get(new Random().nextInt(intersection.size()));
 
     } catch (CompletionException e) {
@@ -295,7 +315,7 @@ public class ClientService {
     }
   }
 
-  public void takePhase2(TakePhase2Request takePhase2Request) {// TODO: error and failure handling
+  public void takePhase2(TakePhase2Request takePhase2Request) {
     // Create a list to hold the futures
     List<CompletableFuture<TakePhase2Response>> futures = new ArrayList<>();
 
@@ -312,6 +332,7 @@ public class ClientService {
 
         @Override
         public void onError(Throwable t) {
+          System.err.println("Error during takePhase2 from replica " + id + ": " + t.getMessage());
           future.completeExceptionally(t);
         }
 
@@ -327,7 +348,7 @@ public class ClientService {
     try {
       CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
     } catch (CompletionException e) {
-      System.out.println("Caught exception: " + e.getCause().getMessage());
+      System.out.println("Error waiting for futures to complete: " + e.getCause().getMessage());
     }
   }
 

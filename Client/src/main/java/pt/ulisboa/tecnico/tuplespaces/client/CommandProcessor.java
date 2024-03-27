@@ -181,6 +181,7 @@ public class CommandProcessor {
         System.out.println("Usage:\n" +
                 "- put <element[,more_elements]>\n" +
                 "- read <element[,more_elements]>\n" +
+                "- take <element[,more_elements]>\n" +
                 "- getTupleSpacesState <server>\n" +
                 "- sleep <integer>\n" +
                 "- setdelay <server> <integer>\n" +

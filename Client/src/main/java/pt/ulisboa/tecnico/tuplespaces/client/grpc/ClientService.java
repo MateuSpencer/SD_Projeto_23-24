@@ -304,9 +304,9 @@ public class ClientService {
       }
 
       // Select a tuple randomly from the intersection
-      if (debug) {
+      /*if (debug) {
         System.out.println("Intersection found: " + intersection);
-      }
+      }*/
       return intersection.get(new Random().nextInt(intersection.size()));
 
     } catch (CompletionException e) {

@@ -389,6 +389,17 @@ public class ClientService {
       System.err.println("Looking up with service name and qualifier: " + serviceName + qualifier);
     }
 
+    // Clear the lists (Redundant since lookup is only called once in the
+    // constructor)
+    tupleSpacesStubs.clear();
+    tupleSpacesBlockingStubs.clear();
+    channels.clear();
+
+    for (int i = 0; i < numServers; i++) {
+      tupleSpacesStubs.add(null);
+      tupleSpacesBlockingStubs.add(null);
+    }
+
     LookUpRequest request = LookUpRequest.newBuilder().setServiceName(serviceName).setQualifier(qualifier).build();
     try {
       LookUpResponse response = namingServerStub.lookup(request);

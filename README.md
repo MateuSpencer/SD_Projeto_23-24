@@ -50,6 +50,52 @@ To compile and install all modules:
 mvn clean install
 ```
 
+## Usage
+
+### Launching the Program
+
+Each devivery has its tag: SD_F1, SD_F2 & SD_F3. Use chackout to open them. This usage if for the last delivery (SD_F3)
+
+To launch the program, you need to first start the servers and then the client. Here's how you can do it:
+
+0. To create the grpc python functions run this command
+
+```
+python -m grpc_tools.protoc -IContract\src\main\proto --python_out=Contract/target generated-sources/protobuf/python --grpc_python_out=Contract/target/generated-sources/protobuf python NameServer.proto
+```
+
+1. Navigate to the NameServer directory and run:
+
+```
+python server.py
+```
+
+2. Navigate to the directory of the server and run the following command:
+
+```s
+mvn exec:java -D exec.args="2003 C -debug"
+```
+Or withou the debug flag.
+
+3. After starting the servers, navigate to the Client directory and run the following command:
+
+```s
+mvn exec:java -Dexec.args="-debug"
+```
+Or without the debug flag.
+
+### Using the Program
+
+Once the client is running, you can interact with the tuple space using the following commands:
+
+- `put <tuple>`: This command puts a tuple into the tuple space.
+- `read <pattern>`: This command reads a tuple from the tuple space that matches the given pattern.
+- `take <pattern>`: This command removes a tuple from the tuple space that matches the given pattern.
+
+Replace `<tuple>` and `<pattern>` with the actual tuple or pattern you want to use.
+
+Write something else to show the usage of all the comands.
+
 ## Built With
 
 * [Maven](https://maven.apache.org/) - Build and dependency management tool;
